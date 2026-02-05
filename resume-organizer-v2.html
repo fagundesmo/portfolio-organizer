@@ -886,12 +886,12 @@
                 grid.innerHTML = `
                     <div style="grid-column: 1/-1; background: white; border-radius: 12px; padding: 30px;">
                         <h3 style="color: #2d3748; margin-bottom: 20px;">🤖 AI-Powered Experience Rewording</h3>
-                        <p style="color: #718096; margin-bottom: 20px;">Drag any experience here and enter a job description to tailor it perfectly for your application.</p>
+                        <p style="color: #718096; margin-bottom: 20px;">Click the "🤖 Reword" button on any experience card to send it here, then enter a job description to tailor it.</p>
 
                         <div style="margin-bottom: 20px;">
                             <label style="display: block; margin-bottom: 8px; color: #4a5568; font-weight: 500;">Job Description or Job Link</label>
-                            <textarea id="jobDescription" placeholder="Paste the job description text here OR paste a job posting URL..." style="width: 100%; min-height: 150px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-family: inherit;" onpaste="handleJobDescriptionPaste(event)"></textarea>
-                            <p style="color: #6b7280; font-size: 0.85em; margin-top: 4px;">💡 Tip: You can paste either the full job description text or a link to the job posting</p>
+                            <textarea id="jobDescription" placeholder="Paste the job description text here OR paste a job posting URL..." style="width: 100%; min-height: 150px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-family: inherit;" oninput="saveJobDescription()" onpaste="handleJobDescriptionPaste(event)">${savedJobDescription}</textarea>
+                            <p style="color: #6b7280; font-size: 0.85em; margin-top: 4px;">💡 Tip: Paste a job posting URL and we'll extract just the job description automatically</p>
                         </div>
 
                         <div id="rewordDropZone"
@@ -899,8 +899,8 @@
                              ondrop="handleDrop(event)"
                              ondragleave="handleDragLeave(event)"
                              style="border: 2px dashed #10b981; border-radius: 12px; padding: 40px; text-align: center; background: #f0fdf4; margin-bottom: 20px; min-height: 200px; transition: all 0.3s;">
-                            <p style="color: #059669; font-size: 1.1em; margin-bottom: 10px;">Drag Experience Here</p>
-                            <p style="color: #6b7280; font-size: 0.9em;">Select an experience from the Experience tab and drag it here</p>
+                            <p style="color: #059669; font-size: 1.1em; margin-bottom: 10px;">${currentExperience ? 'Experience Loaded ✓' : 'No Experience Selected'}</p>
+                            <p style="color: #6b7280; font-size: 0.9em;">${currentExperience ? 'Click the button below to reword it' : 'Go to Experience tab and click "🤖 Reword" on any card'}</p>
                             <div id="droppedExperience" style="margin-top: 20px;"></div>
                         </div>
 
@@ -915,6 +915,20 @@
                         </div>
                     </div>
                 `;
+
+                // Restore the dropped experience display if it exists
+                if (currentExperience) {
+                    displayDroppedExperience(currentExperience);
+                }
+
+                // Check if job description is a URL and needs processing
+                setTimeout(() => {
+                    const textarea = document.getElementById('jobDescription');
+                    if (textarea && textarea.value.trim().match(/^https?:\/\//) && !textarea.value.includes('⏳')) {
+                        handleJobDescriptionPaste({ target: textarea });
+                    }
+                }, 100);
+
                 return;
             }
 
@@ -933,9 +947,16 @@
                             <div class="card-subtitle">${item.title || item.degree || ''}</div>
                             ${item.date ? `<div class="card-subtitle">${item.date}</div>` : ''}
                         </div>
-                        <button class="add-to-export-btn ${item.selected ? 'added' : ''}" onclick="toggleItem('${currentTab}', ${item.id})">
-                            ${item.selected ? '✓ Added' : 'Add to Export'}
-                        </button>
+                        <div style="display: flex; gap: 8px; flex-direction: column;">
+                            ${currentTab === 'experience' ? `
+                                <button class="add-to-export-btn" style="background: #10b981; padding: 6px 12px;" onclick="sendToAIReword(${item.id})">
+                                    🤖 Reword
+                                </button>
+                            ` : ''}
+                            <button class="add-to-export-btn ${item.selected ? 'added' : ''}" onclick="toggleItem('${currentTab}', ${item.id})">
+                                ${item.selected ? '✓ Added' : 'Add to Export'}
+                            </button>
+                        </div>
                     </div>
                     ${item.tags ? `
                         <div class="card-tags">
@@ -1410,6 +1431,7 @@
         let currentExperience = null;
         let draggedItemId = null;
         let draggedItemCategory = null;
+        let savedJobDescription = ''; // Persist job description across tab switches
 
         function handleDragStart(event, itemId, category) {
             event.stopPropagation();
@@ -1420,40 +1442,115 @@
             console.log('Drag started:', itemId, category);
         }
 
+        function saveJobDescription() {
+            const textarea = document.getElementById('jobDescription');
+            if (textarea) {
+                savedJobDescription = textarea.value;
+            }
+        }
+
+        function sendToAIReword(itemId) {
+            const item = resumeData.experience.find(i => i.id === itemId);
+            if (item) {
+                currentExperience = { ...item };
+
+                // Switch to AI Reword tab
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                const aiTab = document.querySelector('.tab[data-tab="ai-reword"]');
+                if (aiTab) {
+                    aiTab.classList.add('active');
+                    currentTab = 'ai-reword';
+                    renderCards();
+                    showNotification('Experience sent to AI Reword! Enter a job description to continue.');
+                }
+            }
+        }
+
+        function displayDroppedExperience(item) {
+            const container = document.getElementById('droppedExperience');
+            if (container) {
+                container.innerHTML = `
+                    <div style="background: white; padding: 15px; border-radius: 8px; text-align: left; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <h4 style="color: #2d3748; margin-bottom: 8px;">${item.company || item.school || item.title}</h4>
+                        <p style="color: #4a5568; font-size: 0.9em; margin-bottom: 8px;"><strong>${item.title || item.degree || ''}</strong> | ${item.date || ''}</p>
+                        <p style="color: #6b7280; font-size: 0.9em;">${item.description || ''}</p>
+                    </div>
+                `;
+            }
+        }
+
         async function handleJobDescriptionPaste(event) {
             // Wait a moment for the paste to complete
             setTimeout(async () => {
-                const textarea = document.getElementById('jobDescription');
+                const textarea = event.target || document.getElementById('jobDescription');
+                if (!textarea) return;
+
                 const text = textarea.value.trim();
 
                 // Check if it's a URL
-                if (text.match(/^https?:\/\//)) {
+                if (text.match(/^https?:\/\//) && !text.includes('⏳')) {
                     const originalText = text;
-                    textarea.value = '⏳ Fetching job description from URL...';
+                    textarea.value = '⏳ Fetching and extracting job description from URL...\n\nThis may take a few seconds.';
                     textarea.disabled = true;
 
                     try {
                         // Fetch the job description from the URL
-                        const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(text)}`);
+                        const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(originalText)}`);
                         const data = await response.json();
 
-                        // Extract text from HTML
+                        // Extract text from HTML with smart content detection
                         const parser = new DOMParser();
                         const doc = parser.parseFromString(data.contents, 'text/html');
 
-                        // Remove scripts, styles, and navigation
-                        doc.querySelectorAll('script, style, nav, header, footer').forEach(el => el.remove());
+                        // Remove unwanted elements
+                        doc.querySelectorAll('script, style, nav, header, footer, iframe, .nav, .menu, .sidebar, .advertisement, .cookie-banner, #header, #footer, #nav, [class*="ad-"], [class*="banner"], [id*="cookie"]').forEach(el => el.remove());
 
-                        // Get the main content text
-                        const jobText = doc.body.innerText.trim();
+                        // Try to find the main job description content
+                        let jobText = '';
+
+                        // Look for common job description containers
+                        const selectors = [
+                            '[class*="job-description"]',
+                            '[class*="description"]',
+                            '[id*="job-description"]',
+                            '[id*="description"]',
+                            'article',
+                            'main',
+                            '[role="main"]',
+                            '.content',
+                            '#content'
+                        ];
+
+                        for (const selector of selectors) {
+                            const element = doc.querySelector(selector);
+                            if (element && element.innerText.length > 200) {
+                                jobText = element.innerText.trim();
+                                break;
+                            }
+                        }
+
+                        // Fallback to body if no specific container found
+                        if (!jobText || jobText.length < 100) {
+                            jobText = doc.body.innerText.trim();
+                        }
+
+                        // Clean up the text - remove excessive whitespace
+                        jobText = jobText.replace(/\n\s*\n\s*\n/g, '\n\n').trim();
+
+                        // Limit length if too long (keep first 3000 chars which is typically the job description)
+                        if (jobText.length > 3000) {
+                            jobText = jobText.substring(0, 3000) + '\n\n[Content truncated - showing first 3000 characters]';
+                        }
 
                         textarea.value = jobText;
+                        savedJobDescription = jobText;
                         textarea.disabled = false;
-                        showNotification('Job description extracted from URL!');
+                        showNotification('Job description extracted! Review and edit as needed.');
 
                     } catch (error) {
                         console.error('Failed to fetch URL:', error);
                         textarea.value = originalText;
+                        savedJobDescription = originalText;
                         textarea.disabled = false;
                         alert('Could not fetch job description from URL. Please paste the text directly instead.');
                     }
@@ -1505,16 +1602,7 @@
             const item = resumeData[draggedItemCategory].find(i => i.id === draggedItemId);
             if (item) {
                 currentExperience = { ...item };
-
-                // Display the dropped experience
-                document.getElementById('droppedExperience').innerHTML = `
-                    <div style="background: white; padding: 15px; border-radius: 8px; text-align: left; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                        <h4 style="color: #2d3748; margin-bottom: 8px;">${item.company || item.school || item.title}</h4>
-                        <p style="color: #4a5568; font-size: 0.9em; margin-bottom: 8px;"><strong>${item.title || item.degree || ''}</strong> | ${item.date || ''}</p>
-                        <p style="color: #6b7280; font-size: 0.9em;">${item.description || ''}</p>
-                    </div>
-                `;
-
+                displayDroppedExperience(item);
                 showNotification('Experience loaded! Enter job description and click "Reword with AI"');
             }
 
