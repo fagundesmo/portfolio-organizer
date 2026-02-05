@@ -1238,7 +1238,62 @@
         }
 
         function openAddItemModal() {
-            alert('Manual add feature coming soon! For now, use the "Upload Resume" button to add items automatically.');
+            const category = currentTab;
+            if (category === 'ai-reword') {
+                alert('Please switch to a different tab to add items');
+                return;
+            }
+
+            const itemType = category === 'experience' ? 'Experience' :
+                           category === 'education' ? 'Education' :
+                           category === 'courses' ? 'Course' :
+                           category === 'skills' ? 'Skill' : 'Item';
+
+            let company, title, location, date, description;
+
+            if (category === 'skills') {
+                const skill = prompt('Enter skill name:');
+                if (skill) {
+                    resumeData[category].push({
+                        id: Date.now(),
+                        title: skill,
+                        selected: false
+                    });
+                    renderCards();
+                    showNotification('Skill added!');
+                }
+            } else {
+                company = prompt(`Enter ${category === 'education' ? 'School' : 'Company'} name:`);
+                if (!company) return;
+
+                title = prompt(`Enter ${category === 'education' ? 'Degree' : 'Title'}:`);
+                if (!title) return;
+
+                location = prompt('Enter location (e.g., City, State):');
+                date = prompt('Enter date (e.g., Jan 2024 - May 2024):');
+                description = prompt('Enter description (separate bullets with periods):');
+
+                const newItem = {
+                    id: Date.now(),
+                    selected: false
+                };
+
+                if (category === 'education') {
+                    newItem.school = company;
+                    newItem.degree = title;
+                } else {
+                    newItem.company = company;
+                    newItem.title = title;
+                }
+
+                if (location) newItem.location = location;
+                if (date) newItem.date = date;
+                if (description) newItem.description = description;
+
+                resumeData[category].push(newItem);
+                renderCards();
+                showNotification(`${itemType} added successfully!`);
+            }
         }
 
         async function exportWord() {
