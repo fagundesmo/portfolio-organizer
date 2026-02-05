@@ -251,7 +251,7 @@
             pointer-events: none;
         }
 
-        .item-card .add-to-export-btn {
+        .item-card button {
             pointer-events: auto;
         }
 
@@ -683,8 +683,8 @@
             <div style="padding: 20px; border-top: 1px solid #e2e8f0;">
                 <div style="margin-bottom: 15px;">
                     <label style="display: block; font-size: 0.85em; color: #4a5568; font-weight: 600; margin-bottom: 8px;">TARGET JOB</label>
-                    <input type="text" id="atsJobLink" placeholder="Paste job posting URL..." style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.85em;" onpaste="handleATSJobPaste(event)" oninput="handleATSJobInput()">
-                    <div style="font-size: 0.75em; color: #6b7280; margin-top: 4px;">Paste a job link to track ATS match</div>
+                    <textarea id="atsJobLink" placeholder="Paste job URL or description..." style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.85em; min-height: 60px; resize: vertical;" onpaste="handleATSJobPaste(event)" oninput="handleATSJobInput()"></textarea>
+                    <div style="font-size: 0.75em; color: #6b7280; margin-top: 4px;">💡 Paste URL or text directly</div>
                 </div>
 
                 <div id="atsScoreDisplay" style="display: none;">
@@ -968,14 +968,20 @@
                             <div class="card-subtitle">${item.title || item.degree || ''}</div>
                             ${item.date ? `<div class="card-subtitle">${item.date}</div>` : ''}
                         </div>
-                        <div style="display: flex; gap: 8px; flex-direction: column;">
+                        <div style="display: flex; gap: 6px; flex-direction: column;">
                             ${currentTab === 'experience' ? `
-                                <button class="add-to-export-btn" style="background: #10b981; padding: 6px 12px;" onclick="sendToAIReword(${item.id})">
+                                <button class="add-to-export-btn" style="background: #10b981; padding: 6px 12px; font-size: 0.8em;" onclick="sendToAIReword(${item.id})">
                                     🤖 Reword
                                 </button>
                             ` : ''}
                             <button class="add-to-export-btn ${item.selected ? 'added' : ''}" onclick="toggleItem('${currentTab}', ${item.id})">
                                 ${item.selected ? '✓ Added' : 'Add to Export'}
+                            </button>
+                            <button class="add-to-export-btn" style="background: #3b82f6; padding: 6px 12px; font-size: 0.8em;" onclick="editItem('${currentTab}', ${item.id})">
+                                ✏️ Edit
+                            </button>
+                            <button class="add-to-export-btn" style="background: #ef4444; padding: 6px 12px; font-size: 0.8em;" onclick="deleteItem('${currentTab}', ${item.id})">
+                                🗑️ Delete
                             </button>
                         </div>
                     </div>
@@ -1277,6 +1283,64 @@
                 const id = name.toLowerCase().replace(/\s+/g, '-');
                 resumeData[id] = [];
                 showNotification(`Section "${name}" added!`);
+            }
+        }
+
+        function deleteItem(category, itemId) {
+            if (confirm('Are you sure you want to delete this item?')) {
+                const index = resumeData[category].findIndex(i => i.id === itemId);
+                if (index > -1) {
+                    resumeData[category].splice(index, 1);
+                    renderCards();
+                    updatePreview();
+                    calculateATSScore();
+                    showNotification('Item deleted successfully!');
+                }
+            }
+        }
+
+        function editItem(category, itemId) {
+            const item = resumeData[category].find(i => i.id === itemId);
+            if (!item) return;
+
+            if (category === 'skills') {
+                const newSkill = prompt('Edit skill name:', item.title);
+                if (newSkill !== null) {
+                    item.title = newSkill;
+                    renderCards();
+                    updatePreview();
+                    calculateATSScore();
+                    showNotification('Skill updated!');
+                }
+            } else {
+                const isEducation = category === 'education';
+
+                const company = prompt(`Edit ${isEducation ? 'School' : 'Company'} name:`, item.company || item.school || '');
+                if (company === null) return;
+
+                const title = prompt(`Edit ${isEducation ? 'Degree' : 'Title'}:`, item.title || item.degree || '');
+                if (title === null) return;
+
+                const location = prompt('Edit location:', item.location || '');
+                const date = prompt('Edit date:', item.date || '');
+                const description = prompt('Edit description:', item.description || '');
+
+                if (isEducation) {
+                    item.school = company;
+                    item.degree = title;
+                } else {
+                    item.company = company;
+                    item.title = title;
+                }
+
+                item.location = location || '';
+                item.date = date || '';
+                item.description = description || '';
+
+                renderCards();
+                updatePreview();
+                calculateATSScore();
+                showNotification('Item updated successfully!');
             }
         }
 
@@ -1820,9 +1884,17 @@
 
                     } catch (error) {
                         console.error('Failed to fetch job URL:', error);
-                        input.value = originalText;
+                        input.value = '';
                         input.disabled = false;
-                        alert('Could not fetch job description. Please try copying the text directly.');
+                        input.placeholder = 'Paste job posting URL...';
+
+                        // Show user-friendly error message
+                        const shouldPasteDirectly = confirm('Could not fetch job description from URL. This can happen due to website restrictions.\n\nWould you like to paste the job description text directly instead?');
+
+                        if (!shouldPasteDirectly) {
+                            // User wants to try again with the URL
+                            input.value = originalText;
+                        }
                     }
                 }
             }, 100);
@@ -1833,13 +1905,15 @@
             const text = input.value.trim();
 
             // If it's not a URL, treat it as direct job description text
-            if (text && !text.match(/^https?:\/\//)) {
+            if (text && !text.match(/^https?:\/\//) && !text.includes('⏳')) {
                 atsJobDescription = text;
-                // Debounce the calculation
+                // Debounce the calculation - wait 2 seconds after user stops typing
                 clearTimeout(atsCalculationTimeout);
                 atsCalculationTimeout = setTimeout(() => {
-                    calculateATSScore();
-                }, 1000);
+                    if (atsJobDescription.length >= 50) {
+                        calculateATSScore();
+                    }
+                }, 2000);
             }
         }
 
