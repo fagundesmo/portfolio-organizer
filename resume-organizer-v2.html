@@ -908,10 +908,10 @@
                             ✨ Reword with AI
                         </button>
 
-                        <div id="rewordResult" style="margin-top: 20px; display: none; background: #f0fdf4; padding: 20px; border-radius: 8px; border: 1px solid #10b981;">
-                            <h4 style="color: #059669; margin-bottom: 10px;">Reworded Version:</h4>
-                            <div id="rewordedText" style="color: #2d3748; line-height: 1.6;"></div>
-                            <button onclick="applyRewordedText()" style="margin-top: 15px; padding: 10px 20px; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer;">Apply to Experience</button>
+                        <div id="rewordResult" style="margin-top: 20px; display: none;">
+                            <h4 style="color: #059669; margin-bottom: 15px; font-size: 1.2em;">✨ AI-Reworded Experience</h4>
+                            <div id="rewordedText" style="color: #2d3748;"></div>
+                            <button onclick="applyRewordedText()" style="width: 100%; margin-top: 15px; padding: 12px 20px; background: #10b981; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 1em;">Apply to My Resume</button>
                         </div>
                     </div>
                 `;
@@ -1659,8 +1659,65 @@
 
                 const result = await response.json();
                 const rewordedText = result.rewordedText;
+                const atsScore = result.atsScore || 0;
+                const matchedKeywords = result.matchedKeywords || [];
+                const missingKeywords = result.missingKeywords || [];
 
-                document.getElementById('rewordedText').innerHTML = rewordedText.replace(/\n/g, '<br>');
+                // Determine ATS score color and message
+                let scoreColor, scoreMessage;
+                if (atsScore >= 80) {
+                    scoreColor = '#10b981'; // green
+                    scoreMessage = 'Excellent! Great keyword match.';
+                } else if (atsScore >= 60) {
+                    scoreColor = '#f59e0b'; // orange
+                    scoreMessage = 'Good match, but could be stronger.';
+                } else {
+                    scoreColor = '#ef4444'; // red
+                    scoreMessage = 'Consider adding more keywords.';
+                }
+
+                // Display reworded text with ATS analysis
+                let displayHTML = `
+                    <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+                        <div style="font-size: 0.95em; color: #2d3748; line-height: 1.8;">
+                            ${rewordedText.replace(/\n/g, '<br>')}
+                        </div>
+                    </div>
+
+                    <div style="background: #f7fafc; padding: 15px; border-radius: 8px; border-left: 4px solid ${scoreColor};">
+                        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                            <span style="font-size: 2em; font-weight: bold; color: ${scoreColor}; margin-right: 10px;">${atsScore}%</span>
+                            <div>
+                                <div style="font-weight: 600; color: #2d3748;">ATS Keyword Match</div>
+                                <div style="font-size: 0.85em; color: #6b7280;">${scoreMessage}</div>
+                            </div>
+                        </div>
+
+                        ${matchedKeywords.length > 0 ? `
+                            <div style="margin-top: 12px;">
+                                <div style="font-size: 0.85em; color: #4a5568; font-weight: 500; margin-bottom: 6px;">
+                                    ✓ Matched Keywords (${matchedKeywords.length}):
+                                </div>
+                                <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                                    ${matchedKeywords.map(kw => `<span style="background: #d1fae5; color: #065f46; padding: 4px 10px; border-radius: 4px; font-size: 0.8em;">${kw}</span>`).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+
+                        ${missingKeywords.length > 0 ? `
+                            <div style="margin-top: 12px;">
+                                <div style="font-size: 0.85em; color: #4a5568; font-weight: 500; margin-bottom: 6px;">
+                                    💡 Consider adding these keywords:
+                                </div>
+                                <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                                    ${missingKeywords.map(kw => `<span style="background: #fef3c7; color: #92400e; padding: 4px 10px; border-radius: 4px; font-size: 0.8em;">${kw}</span>`).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+
+                document.getElementById('rewordedText').innerHTML = displayHTML;
                 currentExperience.rewordedDescription = rewordedText;
 
             } catch (error) {

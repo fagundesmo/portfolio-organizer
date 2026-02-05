@@ -110,7 +110,7 @@ ${resumeText}`;
     }
 });
 
-// Reword experience endpoint
+// Reword experience endpoint with multi-step processing
 app.post('/api/reword-experience', async (req, res) => {
     try {
         const { experience, jobDescription } = req.body;
@@ -119,9 +119,7 @@ app.post('/api/reword-experience', async (req, res) => {
             return res.status(400).json({ error: 'Experience and job description are required' });
         }
 
-        // Your Groq API key from environment variable
         const apiKey = process.env.GROQ_API_KEY;
-
         if (!apiKey) {
             return res.status(500).json({ error: 'Server not configured with API key' });
         }
@@ -131,54 +129,138 @@ Title: ${experience.title || experience.degree || ''}
 Date: ${experience.date || ''}
 Description: ${experience.description || ''}`;
 
-        const prompt = `You are a professional resume writer. Your task is to reword the given work experience to better match the job description while keeping all facts accurate and truthful.
+        // Helper function to call Groq API
+        async function callGroqAPI(prompt, temperature = 0.7, maxTokens = 800) {
+            const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                    model: 'llama-3.3-70b-versatile',
+                    messages: [{ role: 'user', content: prompt }],
+                    temperature,
+                    max_tokens: maxTokens
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`AI service error: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            return result.choices[0].message.content;
+        }
+
+        // STEP 1: Analyze job description to extract keywords and requirements
+        const analysisPrompt = `Analyze this job description and extract:
+1. Top 10 most important keywords/skills (technical skills, tools, methodologies)
+2. Key requirements and qualifications
+3. Strong action verbs used in the posting
 
 Job Description:
 ${jobDescription}
 
-Current Experience:
+Return ONLY a JSON object with this format (no markdown, no explanations):
+{
+  "keywords": ["keyword1", "keyword2"],
+  "requirements": ["requirement1", "requirement2"],
+  "actionVerbs": ["verb1", "verb2"]
+}`;
+
+        const analysisResult = await callGroqAPI(analysisPrompt, 0.3, 500);
+        const analysis = JSON.parse(analysisResult.replace(/```json\n?|\n?```/g, ''));
+
+        // STEP 2: Generate initial reworded version with keyword targeting
+        const rewordPrompt = `You are a professional resume writer. Reword this work experience to match the job requirements while keeping all facts accurate.
+
+Target Keywords: ${analysis.keywords.slice(0, 8).join(', ')}
+Key Requirements: ${analysis.requirements.slice(0, 5).join('; ')}
+Preferred Action Verbs: ${analysis.actionVerbs.slice(0, 5).join(', ')}
+
+Original Experience:
 ${experienceText}
 
-Instructions:
-1. Analyze the job description to identify key skills, technologies, and requirements
-2. Reword the experience description to emphasize relevant skills and achievements that match the job
-3. Keep all facts accurate - do not make up accomplishments or skills
-4. Use action verbs and quantify achievements where possible
-5. Return 3-5 bullet points that are tailored to this specific job
-6. Each bullet point should be clear, concise, and highlight relevant value
+CRITICAL RULES:
+1. Create exactly 3-5 bullet points
+2. Start bullets with strong action verbs (prefer from the list above)
+3. Strategically include target keywords where they fit naturally
+4. Keep all facts 100% accurate - do NOT invent accomplishments or skills
+5. Quantify achievements with numbers/metrics IF they exist in original
+6. Each bullet should be 1-2 lines maximum
+7. Focus on impact and results that match the job requirements
 
-Return ONLY the reworded bullet points, one per line, starting with a bullet point (•). No introduction, no explanations, just the bullets.`;
+Return ONLY the bullet points, one per line, starting with •. No other text.`;
 
-        // Call Groq API
-        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`
-            },
-            body: JSON.stringify({
-                model: 'llama-3.3-70b-versatile',
-                messages: [{
-                    role: 'user',
-                    content: prompt
-                }],
-                temperature: 0.7,
-                max_tokens: 800
-            })
-        });
+        let finalReword = await callGroqAPI(rewordPrompt, 0.7, 800);
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Groq API error:', errorText);
-            return res.status(response.status).json({
-                error: `AI service error: ${response.statusText}`
-            });
+        // STEP 3: Quality validation - check for hallucinations
+        const validationPrompt = `Compare the original and reworded experiences. Answer ONLY "VALID" or "INVALID".
+
+Mark INVALID if the reworded version:
+- Invented fake accomplishments not in the original
+- Changed company, title, or dates
+- Added skills/technologies not mentioned in original
+
+Original: ${experienceText}
+Reworded: ${finalReword}
+
+Answer (one word only):`;
+
+        const validation = await callGroqAPI(validationPrompt, 0.1, 50);
+
+        if (validation.trim().toUpperCase().includes('INVALID')) {
+            // If validation fails, retry with stricter instructions
+            const strictPrompt = `${rewordPrompt}
+
+WARNING: Previous attempt failed validation for adding fake information.
+You MUST NOT invent or add ANY accomplishments, skills, or facts not present in the original.
+Only reword and re-emphasize what already exists.`;
+
+            finalReword = await callGroqAPI(strictPrompt, 0.5, 800);
         }
 
-        const result = await response.json();
-        const rewordedText = result.choices[0].message.content;
+        // STEP 4: Format enforcement and refinement
+        const refinementPrompt = `Polish this reworded experience for maximum impact:
 
-        res.json({ success: true, rewordedText });
+${finalReword}
+
+Requirements:
+1. Must have exactly 3-5 bullet points (add or remove if needed)
+2. Each bullet starts with a strong action verb (past tense)
+3. Include metrics/numbers where they exist
+4. Bullets are concise (1-2 lines each, max 120 characters)
+5. Fix any grammar, punctuation, or formatting issues
+6. Professional, confident tone
+
+Return ONLY the final polished bullet points with •. No other text.`;
+
+        const polishedReword = await callGroqAPI(refinementPrompt, 0.4, 800);
+
+        // STEP 5: Calculate ATS keyword match score
+        const keywordList = analysis.keywords.slice(0, 10);
+        const rewordLower = polishedReword.toLowerCase();
+        const matchedKeywords = keywordList.filter(keyword =>
+            rewordLower.includes(keyword.toLowerCase())
+        );
+        const atsScore = Math.round((matchedKeywords.length / keywordList.length) * 100);
+
+        // Suggest missing keywords
+        const missingKeywords = keywordList.filter(keyword =>
+            !rewordLower.includes(keyword.toLowerCase())
+        ).slice(0, 3);
+
+        // Return final result with ATS analysis
+        res.json({
+            success: true,
+            rewordedText: polishedReword,
+            atsScore: atsScore,
+            matchedKeywords: matchedKeywords,
+            totalKeywords: keywordList.length,
+            missingKeywords: missingKeywords,
+            allKeywords: keywordList
+        });
 
     } catch (error) {
         console.error('Server error:', error);
