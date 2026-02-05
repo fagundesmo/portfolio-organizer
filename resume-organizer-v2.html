@@ -416,6 +416,18 @@
 
         .preview-section {
             margin-bottom: 20px;
+            cursor: move;
+            padding: 10px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .preview-section:hover {
+            background: #f7fafc;
+        }
+
+        .preview-section.dragging-section {
+            opacity: 0.5;
         }
 
         .preview-section h4 {
@@ -424,6 +436,7 @@
             border-bottom: 1.5px solid #000;
             padding-bottom: 4px;
             margin-bottom: 12px;
+            pointer-events: none;
         }
 
         .preview-item {
@@ -946,6 +959,9 @@
             }
         }
 
+        let sectionOrder = ['experience', 'education', 'courses', 'skills', 'leadership'];
+        let draggedSectionIndex = null;
+
         function updatePreview() {
             const profile = resumeData.profile;
             document.getElementById('previewName').textContent = profile.name.toUpperCase() || 'YOUR NAME';
@@ -958,9 +974,8 @@
 
             document.getElementById('previewSummary').textContent = profile.summary || '';
 
-            // Render sections
+            // Render sections with drag-drop for reordering
             const sectionsHtml = [];
-            const sectionOrder = ['experience', 'education', 'courses', 'skills', 'leadership'];
             const sectionTitles = {
                 experience: 'Work Experience',
                 education: 'Education',
@@ -969,12 +984,18 @@
                 leadership: 'Leadership & Activities'
             };
 
-            sectionOrder.forEach(section => {
+            sectionOrder.forEach((section, index) => {
                 const items = (resumeData[section] || []).filter(item => item.selected);
                 if (items.length > 0) {
                     sectionsHtml.push(`
-                        <div class="preview-section">
-                            <h4>${sectionTitles[section]}</h4>
+                        <div class="preview-section"
+                             draggable="true"
+                             data-section-index="${index}"
+                             ondragstart="handleSectionDragStart(event, ${index})"
+                             ondragend="handleSectionDragEnd(event)"
+                             ondragover="handleSectionDragOver(event, ${index})"
+                             ondrop="handleSectionDrop(event, ${index})">
+                            <h4>${sectionTitles[section]} <span style="opacity: 0.4; font-size: 0.8em;">⋮⋮</span></h4>
                             ${items.map(item => `
                                 <div class="preview-item">
                                     <div class="preview-item-header">
@@ -991,6 +1012,38 @@
             });
 
             document.getElementById('previewSections').innerHTML = sectionsHtml.join('');
+        }
+
+        function handleSectionDragStart(event, index) {
+            draggedSectionIndex = index;
+            event.target.classList.add('dragging-section');
+            event.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleSectionDragEnd(event) {
+            event.target.classList.remove('dragging-section');
+            draggedSectionIndex = null;
+        }
+
+        function handleSectionDragOver(event, index) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+        }
+
+        function handleSectionDrop(event, dropIndex) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            if (draggedSectionIndex === null || draggedSectionIndex === dropIndex) return;
+
+            // Reorder sections
+            const movedSection = sectionOrder[draggedSectionIndex];
+            sectionOrder.splice(draggedSectionIndex, 1);
+            sectionOrder.splice(dropIndex, 0, movedSection);
+
+            // Update preview
+            updatePreview();
+            showNotification('Section order updated!');
         }
 
         function showNotification(message) {
