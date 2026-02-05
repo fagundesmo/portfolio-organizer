@@ -568,13 +568,23 @@
             }
 
             .container {
-                box-shadow: none;
-                max-width: 100%;
-                background: white;
+                box-shadow: none !important;
+                max-width: 100% !important;
+                background: white !important;
+                border: none !important;
+                border-radius: 0 !important;
+                padding: 0 !important;
+                margin: 0 !important;
             }
 
             .header, .tabs, .export-btn, .drop-zone {
                 display: none !important;
+            }
+
+            .tab-content {
+                padding: 0 !important;
+                margin: 0 !important;
+                border: none !important;
             }
 
             .together-view {
@@ -1347,13 +1357,13 @@
             if (selectedExperience.length > 0) {
                 sectionsMap['experience'] = {
                     title: 'Work Experience',
-                    items: [...selectedExperience].sort((a, b) => parseStartDate(a.date) - parseStartDate(b.date))
+                    items: [...selectedExperience].sort((a, b) => parseStartDate(b.date) - parseStartDate(a.date))
                 };
             }
             if (selectedCourses.length > 0) {
                 sectionsMap['courses'] = {
                     title: 'Courses & Certifications',
-                    items: [...selectedCourses].sort((a, b) => parseStartDate(a.date) - parseStartDate(b.date))
+                    items: [...selectedCourses].sort((a, b) => parseStartDate(b.date) - parseStartDate(a.date))
                 };
             }
             Object.entries(customTabItems).forEach(([tabName, items]) => {
@@ -1361,7 +1371,7 @@
                     const tabId = tabName.toLowerCase().replace(/\s+/g, '-');
                     sectionsMap[tabId] = {
                         title: tabName,
-                        items: [...items].sort((a, b) => parseStartDate(a.date) - parseStartDate(b.date))
+                        items: [...items].sort((a, b) => parseStartDate(b.date) - parseStartDate(a.date))
                     };
                 }
             });
@@ -1606,24 +1616,24 @@
                     }
                 });
 
-                // Build sections map
+                // Build sections map (sort in REVERSE chronological order - latest first)
                 const sectionsMap = {};
                 if (selectedExperience.length > 0) {
                     sectionsMap['experience'] = {
                         title: 'Work Experience',
-                        items: [...selectedExperience].sort((a, b) => parseStartDate(a.date) - parseStartDate(b.date))
+                        items: [...selectedExperience].sort((a, b) => parseStartDate(b.date) - parseStartDate(a.date))
                     };
                 }
                 if (selectedCourses.length > 0) {
                     sectionsMap['courses'] = {
                         title: 'Courses & Certifications',
-                        items: [...selectedCourses].sort((a, b) => parseStartDate(a.date) - parseStartDate(b.date))
+                        items: [...selectedCourses].sort((a, b) => parseStartDate(b.date) - parseStartDate(a.date))
                     };
                 }
                 Object.entries(customTabItems).forEach(([tabId, { title, items }]) => {
                     sectionsMap[tabId] = {
                         title,
-                        items: [...items].sort((a, b) => parseStartDate(a.date) - parseStartDate(b.date))
+                        items: [...items].sort((a, b) => parseStartDate(b.date) - parseStartDate(a.date))
                     };
                 });
 

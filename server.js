@@ -232,7 +232,7 @@ app.post('/api/generate-docx', async (req, res) => {
                     headerLine1.push(
                         new TextRun({
                             text: item.company || item.school,
-                            bold: true,
+                            bold: false,
                             font: "Times New Roman",
                             size: 20 // 10pt
                         })
@@ -240,12 +240,14 @@ app.post('/api/generate-docx', async (req, res) => {
                 }
 
                 if (item.location) {
+                    // Add spacing to push location to the right
                     if (headerLine1.length > 0) {
-                        headerLine1.push(new TextRun({ text: ", ", font: "Times New Roman", size: 20 }));
+                        headerLine1.push(new TextRun({ text: "\t\t", font: "Times New Roman", size: 20 }));
                     }
                     headerLine1.push(
                         new TextRun({
                             text: item.location,
+                            bold: true,
                             font: "Times New Roman",
                             size: 20
                         })
@@ -265,8 +267,8 @@ app.post('/api/generate-docx', async (req, res) => {
 
                 if (item.date) {
                     if (headerLine2.length > 0) {
-                        // Add tab or spaces for right alignment effect
-                        headerLine2.push(new TextRun({ text: " ", font: "Times New Roman", size: 20 }));
+                        // Add tabs for right alignment effect
+                        headerLine2.push(new TextRun({ text: "\t\t", font: "Times New Roman", size: 20 }));
                     }
                     headerLine2.push(
                         new TextRun({
