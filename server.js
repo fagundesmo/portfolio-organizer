@@ -382,6 +382,11 @@ app.post('/api/generate-docx', async (req, res) => {
     }
 });
 
+// Redirect root to new version
+app.get('/', (req, res) => {
+    res.redirect('/resume-organizer-v2.html');
+});
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', message: 'Server is running' });
