@@ -1,10 +1,11 @@
 // Backend Server for Portfolio Organizer
 // This keeps your Groq API key safe and allows anyone to use the tool
 
-const express = require('express');
-const cors = require('cors');
-const fetch = require('node-fetch');
-require('dotenv').config();
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
