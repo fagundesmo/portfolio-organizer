@@ -4,7 +4,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel, LevelFormat } from 'docx';
+import { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel, LevelFormat,
+         Table, TableRow, TableCell, WidthType, BorderStyle, VerticalAlign } from 'docx';
 
 dotenv.config();
 
@@ -222,125 +223,123 @@ app.post('/api/generate-docx', async (req, res) => {
                 })
             );
 
-            // Section items
+            // Section items - using table format like template
             section.items.forEach((item, itemIndex) => {
-                // Item header (company/school, title/degree, date)
-                const headerLine1 = [];
-                const headerLine2 = [];
+                const tableRows = [];
 
-                if (item.company || item.school) {
-                    headerLine1.push(
-                        new TextRun({
-                            text: item.company || item.school,
-                            bold: false,
-                            font: "Times New Roman",
-                            size: 20 // 10pt
-                        })
-                    );
-                }
+                // Row 1: Company/School and Location
+                tableRows.push(
+                    new TableRow({
+                        children: [
+                            new TableCell({
+                                width: { size: 70, type: WidthType.PERCENTAGE },
+                                borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE },
+                                          left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
+                                children: [new Paragraph({
+                                    children: [new TextRun({
+                                        text: item.company || item.school || '',
+                                        font: "Times New Roman",
+                                        size: 20
+                                    })]
+                                })]
+                            }),
+                            new TableCell({
+                                width: { size: 30, type: WidthType.PERCENTAGE },
+                                borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE },
+                                          left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
+                                children: [new Paragraph({
+                                    alignment: AlignmentType.RIGHT,
+                                    children: [new TextRun({
+                                        text: item.location || '',
+                                        bold: true,
+                                        font: "Times New Roman",
+                                        size: 20
+                                    })]
+                                })]
+                            })
+                        ]
+                    })
+                );
 
-                if (item.location) {
-                    // Add spacing to push location to the right
-                    if (headerLine1.length > 0) {
-                        headerLine1.push(new TextRun({ text: "\t\t", font: "Times New Roman", size: 20 }));
-                    }
-                    headerLine1.push(
-                        new TextRun({
-                            text: item.location,
-                            bold: true,
-                            font: "Times New Roman",
-                            size: 20
-                        })
-                    );
-                }
+                // Row 2: Title/Degree and Date
+                tableRows.push(
+                    new TableRow({
+                        children: [
+                            new TableCell({
+                                width: { size: 70, type: WidthType.PERCENTAGE },
+                                borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE },
+                                          left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
+                                children: [new Paragraph({
+                                    children: [new TextRun({
+                                        text: item.title || item.degree || '',
+                                        italics: true,
+                                        font: "Times New Roman",
+                                        size: 20
+                                    })]
+                                })]
+                            }),
+                            new TableCell({
+                                width: { size: 30, type: WidthType.PERCENTAGE },
+                                borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE },
+                                          left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
+                                children: [new Paragraph({
+                                    alignment: AlignmentType.RIGHT,
+                                    children: [new TextRun({
+                                        text: item.date || '',
+                                        font: "Times New Roman",
+                                        size: 20
+                                    })]
+                                })]
+                            })
+                        ]
+                    })
+                );
 
-                if (item.title || item.degree) {
-                    headerLine2.push(
-                        new TextRun({
-                            text: item.title || item.degree,
-                            italics: true,
-                            font: "Times New Roman",
-                            size: 20
-                        })
-                    );
-                }
-
-                if (item.date) {
-                    if (headerLine2.length > 0) {
-                        // Add tabs for right alignment effect
-                        headerLine2.push(new TextRun({ text: "\t\t", font: "Times New Roman", size: 20 }));
-                    }
-                    headerLine2.push(
-                        new TextRun({
-                            text: item.date,
-                            font: "Times New Roman",
-                            size: 20
-                        })
-                    );
-                }
-
-                // Add header lines
-                if (headerLine1.length > 0) {
-                    docSections.push(
-                        new Paragraph({
-                            children: headerLine1,
-                            spacing: { after: 40 }
-                        })
-                    );
-                }
-
-                if (headerLine2.length > 0) {
-                    docSections.push(
-                        new Paragraph({
-                            children: headerLine2,
-                            spacing: { after: 80 }
-                        })
-                    );
-                }
-
-                // Description bullets
+                // Row 3: Bullets (spanning full width)
                 if (item.description) {
-                    // Split by period + space to separate bullets
                     const bullets = item.description
                         .split(/\.\s+/)
                         .map(b => b.trim())
                         .filter(b => b && b.length > 10);
 
-                    bullets.forEach((bullet, bulletIndex) => {
-                        // Add period back if not present
+                    const bulletParagraphs = bullets.map(bullet => {
                         let bulletText = bullet;
                         if (!bulletText.endsWith('.')) {
                             bulletText += '.';
                         }
-
-                        docSections.push(
-                            new Paragraph({
-                                numbering: {
-                                    reference: "bullets",
-                                    level: 0
-                                },
-                                children: [
-                                    new TextRun({
-                                        text: bulletText,
-                                        font: "Times New Roman",
-                                        size: 20
-                                    })
-                                ],
-                                spacing: { after: 60 }
-                            })
-                        );
+                        return new Paragraph({
+                            numbering: { reference: "bullets", level: 0 },
+                            children: [new TextRun({
+                                text: bulletText,
+                                font: "Times New Roman",
+                                size: 20
+                            })],
+                            spacing: { after: 60 }
+                        });
                     });
-                }
 
-                // Add spacing between items
-                if (itemIndex < section.items.length - 1) {
-                    docSections.push(
-                        new Paragraph({
-                            children: [new TextRun({ text: "", size: 20 })],
-                            spacing: { after: 120 }
+                    tableRows.push(
+                        new TableRow({
+                            children: [
+                                new TableCell({
+                                    columnSpan: 2,
+                                    borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE },
+                                              left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
+                                    children: bulletParagraphs
+                                })
+                            ]
                         })
                     );
                 }
+
+                // Add the table
+                docSections.push(
+                    new Table({
+                        width: { size: 100, type: WidthType.PERCENTAGE },
+                        rows: tableRows,
+                        margins: { top: 60, bottom: 180, left: 0, right: 0 }
+                    })
+                );
             });
         });
 
