@@ -1,4 +1,4 @@
-// Backend Server for Portfolio Organizer
+// Backend Server for Resume Organizer
 // This keeps your Groq API key safe and allows anyone to use the tool
 
 import express from 'express';
@@ -389,11 +389,11 @@ app.get('/api/health', (req, res) => {
 
 app.listen(PORT, () => {
     console.log(`
-🚀 Portfolio Organizer Server Running!
+🚀 Resume Organizer Server Running!
 📍 Server: http://localhost:${PORT}
-📄 App: http://localhost:${PORT}/portfolio-organizer.html
+📄 App: http://localhost:${PORT}/resume-organizer-v2.html
 🔑 API Key: ${process.env.GROQ_API_KEY ? 'Configured ✓' : 'Missing ✗'}
 
-Ready to accept resume uploads!
+Ready to accept resume uploads and generate Word documents!
     `);
 });
