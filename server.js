@@ -270,6 +270,153 @@ Return ONLY the final polished bullet points with •. No other text.`;
     }
 });
 
+// Calculate ATS score endpoint
+app.post('/api/calculate-ats-score', async (req, res) => {
+    try {
+        const { jobDescription, profile, sections } = req.body;
+
+        if (!jobDescription || !sections) {
+            return res.status(400).json({ error: 'Job description and resume sections are required' });
+        }
+
+        const apiKey = process.env.GROQ_API_KEY;
+        if (!apiKey) {
+            return res.status(500).json({ error: 'Server not configured with API key' });
+        }
+
+        // Helper function to call Groq API
+        async function callGroqAPI(prompt, temperature = 0.3, maxTokens = 1000) {
+            const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                    model: 'llama-3.3-70b-versatile',
+                    messages: [{ role: 'user', content: prompt }],
+                    temperature,
+                    max_tokens: maxTokens
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`AI service error: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            return result.choices[0].message.content;
+        }
+
+        // Build resume text from selected sections
+        let resumeText = `Name: ${profile.name || 'N/A'}\n`;
+        if (profile.email) resumeText += `Email: ${profile.email}\n`;
+        if (profile.summary) resumeText += `Summary: ${profile.summary}\n\n`;
+
+        sections.forEach(section => {
+            resumeText += `${section.title.toUpperCase()}:\n`;
+            section.items.forEach(item => {
+                if (section.title === 'skills') {
+                    resumeText += `- ${item.title || ''}\n`;
+                } else {
+                    resumeText += `${item.company || item.school || ''} - ${item.title || item.degree || ''}\n`;
+                    if (item.description) resumeText += `${item.description}\n`;
+                }
+            });
+            resumeText += '\n';
+        });
+
+        // STEP 1: Extract job requirements and keywords using AI
+        const analysisPrompt = `Analyze this job description and extract ATS-relevant information:
+
+Job Description:
+${jobDescription}
+
+Extract and return ONLY a JSON object (no markdown, no explanations) with:
+{
+  "keywords": ["keyword1", "keyword2", ...],  // Top 15 important technical keywords, skills, tools
+  "requiredQualifications": ["qual1", "qual2", ...],  // Education, certifications, years of experience
+  "requiredSkills": ["skill1", "skill2", ...],  // Must-have technical and soft skills
+  "preferredSkills": ["skill1", "skill2", ...]  // Nice-to-have skills
+}`;
+
+        const analysisResult = await callGroqAPI(analysisPrompt, 0.2, 800);
+        const jobAnalysis = JSON.parse(analysisResult.replace(/```json\n?|\n?```/g, ''));
+
+        // STEP 2: Calculate keyword match score
+        const allKeywords = [...jobAnalysis.keywords, ...jobAnalysis.requiredSkills];
+        const resumeLower = resumeText.toLowerCase();
+        const matchedKeywords = allKeywords.filter(keyword =>
+            resumeLower.includes(keyword.toLowerCase())
+        );
+        const keywordScore = Math.round((matchedKeywords.length / allKeywords.length) * 100);
+
+        // STEP 3: Check qualifications match using AI
+        const qualPrompt = `Compare the resume against these required qualifications:
+
+Required Qualifications:
+${jobAnalysis.requiredQualifications.join('\n')}
+
+Resume:
+${resumeText}
+
+For each qualification, determine if the resume meets it. Return ONLY a JSON array (no markdown):
+["MET", "NOT_MET", "MET", ...]
+
+One status per qualification in the same order.`;
+
+        const qualResult = await callGroqAPI(qualPrompt, 0.1, 300);
+        const qualMatches = JSON.parse(qualResult.replace(/```json\n?|\n?```/g, ''));
+        const qualificationsMet = qualMatches.filter(q => q === 'MET').length;
+        const qualificationScore = jobAnalysis.requiredQualifications.length > 0
+            ? Math.round((qualificationsMet / jobAnalysis.requiredQualifications.length) * 100)
+            : 100;
+
+        // STEP 4: Calculate skills coverage
+        const requiredSkills = jobAnalysis.requiredSkills;
+        const matchedSkills = requiredSkills.filter(skill =>
+            resumeLower.includes(skill.toLowerCase())
+        );
+        const skillScore = requiredSkills.length > 0
+            ? Math.round((matchedSkills.length / requiredSkills.length) * 100)
+            : 100;
+
+        // STEP 5: Calculate overall ATS score (weighted average)
+        const overallScore = Math.round(
+            (keywordScore * 0.4) +  // Keywords: 40%
+            (qualificationScore * 0.35) +  // Qualifications: 35%
+            (skillScore * 0.25)  // Skills: 25%
+        );
+
+        // Find missing keywords for suggestions
+        const missingKeywords = allKeywords.filter(keyword =>
+            !resumeLower.includes(keyword.toLowerCase())
+        ).slice(0, 8);
+
+        // Return comprehensive ATS score
+        res.json({
+            success: true,
+            overallScore: overallScore,
+            keywordScore: keywordScore,
+            qualificationScore: qualificationScore,
+            skillScore: skillScore,
+            matchedKeywords: matchedKeywords.length,
+            totalKeywords: allKeywords.length,
+            qualificationMatches: qualificationsMet,
+            totalQualifications: jobAnalysis.requiredQualifications.length,
+            matchedSkills: matchedSkills.length,
+            totalSkills: requiredSkills.length,
+            missingKeywords: missingKeywords
+        });
+
+    } catch (error) {
+        console.error('ATS calculation error:', error);
+        res.status(500).json({
+            error: 'Failed to calculate ATS score: ' + error.message
+        });
+    }
+});
+
 // Generate Word document endpoint
 app.post('/api/generate-docx', async (req, res) => {
     try {
