@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drag Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            background: #f0f0f0;
+        }
+
+        .test-area {
+            display: flex;
+            gap: 40px;
+            margin-top: 30px;
+        }
+
+        .draggable-item {
+            background: #4CAF50;
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            cursor: grab;
+            user-select: none;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .draggable-item:active {
+            cursor: grabbing;
+        }
+
+        .drop-target {
+            flex: 1;
+            background: white;
+            border: 3px dashed #ccc;
+            border-radius: 10px;
+            padding: 40px;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+            color: #999;
+        }
+
+        .drop-target.drag-over {
+            background: #e3f2fd;
+            border-color: #2196F3;
+        }
+
+        .log {
+            background: #333;
+            color: #0f0;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: monospace;
+            margin-top: 30px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .log div {
+            margin: 5px 0;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        .success {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Drag & Drop Test</h1>
+    <p style="font-size: 1.1em;">Drag the green box to the drop zone on the right →</p>
+
+    <div class="test-area">
+        <div class="draggable-item" draggable="true" id="dragItem">
+            DRAG ME
+        </div>
+
+        <div class="drop-target" id="dropZone">
+            Drop here
+        </div>
+    </div>
+
+    <div class="log" id="log">
+        <div>Waiting for drag events...</div>
+    </div>
+
+    <script>
+        const log = document.getElementById('log');
+        const dragItem = document.getElementById('dragItem');
+        const dropZone = document.getElementById('dropZone');
+
+        function addLog(message, isSuccess = false) {
+            const div = document.createElement('div');
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            if (isSuccess) div.className = 'success';
+            log.appendChild(div);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        // Drag item events
+        dragItem.addEventListener('dragstart', (e) => {
+            addLog('✓ DRAGSTART event fired!');
+            e.dataTransfer.effectAllowed = 'copy';
+            e.dataTransfer.setData('text/plain', 'test-data');
+            dragItem.style.opacity = '0.5';
+        });
+
+        dragItem.addEventListener('drag', (e) => {
+            // This fires continuously, so we'll skip logging it
+        });
+
+        dragItem.addEventListener('dragend', (e) => {
+            addLog('✓ DRAGEND event fired!');
+            dragItem.style.opacity = '1';
+        });
+
+        // Drop zone events
+        dropZone.addEventListener('dragenter', (e) => {
+            e.preventDefault();
+            addLog('✓ DRAGENTER on drop zone!');
+            dropZone.classList.add('drag-over');
+        });
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+            // This fires continuously, logged only once
+            if (!dropZone.dataset.dragOverLogged) {
+                addLog('✓ DRAGOVER on drop zone!');
+                dropZone.dataset.dragOverLogged = 'true';
+            }
+        });
+
+        dropZone.addEventListener('dragleave', (e) => {
+            addLog('✓ DRAGLEAVE from drop zone!');
+            dropZone.classList.remove('drag-over');
+            delete dropZone.dataset.dragOverLogged;
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const data = e.dataTransfer.getData('text/plain');
+            addLog(`✓✓✓ DROP EVENT SUCCESS! Data: ${data}`, true);
+            dropZone.classList.remove('drag-over');
+            dropZone.innerHTML = '<div style="color: #4CAF50; font-size: 2em;">✓ DROP SUCCESSFUL!</div>';
+            delete dropZone.dataset.dragOverLogged;
+        });
+
+        addLog('Drag & Drop test initialized. Try dragging the green box!');
+    </script>
+</body>
+</html>

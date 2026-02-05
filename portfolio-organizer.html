@@ -1,0 +1,2107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Organizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e0e0e0;
+            overflow-x: auto;
+        }
+
+        .tab {
+            flex: 1;
+            min-width: 120px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1.1em;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+            position: relative;
+        }
+
+        .tab:hover {
+            background: #e9ecef;
+        }
+
+        .tab.active {
+            background: white;
+            border-bottom: 3px solid #667eea;
+            color: #667eea;
+        }
+
+        .tab.add-tab-btn {
+            flex: 0 0 auto;
+            background: #667eea;
+            color: white;
+            font-size: 1.3em;
+            min-width: 60px;
+        }
+
+        .tab.add-tab-btn:hover {
+            background: #5568d3;
+        }
+
+        .tab .delete-tab-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            font-size: 0.7em;
+            cursor: pointer;
+            display: none;
+        }
+
+        .tab:hover .delete-tab-btn {
+            display: block;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+            min-height: 500px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .items-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .item-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            cursor: grab;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .item-card:active {
+            cursor: grabbing;
+        }
+
+        .item-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-color: #667eea;
+        }
+
+        .item-card.dragging {
+            opacity: 0.5;
+            transform: rotate(5deg);
+        }
+
+        .item-card .title {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 10px;
+            pointer-events: none;
+        }
+
+        .item-card .place {
+            font-size: 1em;
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 10px;
+            pointer-events: none;
+        }
+
+        .item-card .date {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 10px;
+            pointer-events: none;
+        }
+
+        .item-card .description {
+            font-size: 0.95em;
+            color: #555;
+            line-height: 1.5;
+            pointer-events: none;
+        }
+
+        .item-card .drag-handle {
+            pointer-events: none;
+        }
+
+        .item-card .edit-btn {
+            position: absolute;
+            top: 10px;
+            right: 45px;
+            background: #667eea;
+            color: white;
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            z-index: 10;
+        }
+
+        .item-card .edit-btn:hover {
+            background: #5568d3;
+            transform: scale(1.1);
+        }
+
+        .item-card .delete-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            z-index: 10;
+        }
+
+        .item-card .delete-btn:hover {
+            background: #c82333;
+            transform: scale(1.1);
+        }
+
+        .item-card .checkbox {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+        }
+
+        .item-card.selected {
+            border-color: #667eea;
+            background: #f0f3ff;
+        }
+
+        .item-card.selected::after {
+            content: '✓';
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: #667eea;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            pointer-events: none;
+        }
+
+        .add-item-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .add-item-btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .together-view {
+            background: white;
+            border-radius: 10px;
+            padding: 40px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .together-view h2 {
+            color: #333;
+            font-size: 2em;
+            margin-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .together-section {
+            margin-top: 30px;
+            cursor: move;
+            padding: 15px;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .together-section:hover {
+            background: #f8f9fa;
+        }
+
+        .together-section.dragging-section {
+            opacity: 0.5;
+            transform: scale(0.98);
+        }
+
+        .together-section h3 {
+            color: #667eea;
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+
+        .together-section h3::before {
+            content: '⋮⋮';
+            margin-right: 10px;
+            color: #999;
+            font-size: 0.8em;
+        }
+
+        .together-item {
+            margin-bottom: 25px;
+            padding-bottom: 25px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .together-item:last-child {
+            border-bottom: none;
+        }
+
+        .together-item .item-title {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .together-item .item-place {
+            font-size: 1.05em;
+            color: #667eea;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+
+        .together-item .item-date {
+            font-size: 0.95em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .together-item .item-description {
+            font-size: 1em;
+            color: #555;
+            margin-top: 10px;
+            line-height: 1.6;
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .together-item .item-description li {
+            margin-bottom: 8px;
+            padding-left: 20px;
+            text-indent: -20px;
+        }
+
+        .together-item .item-description li::before {
+            content: '• ';
+            color: #667eea;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .modal-content h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        .modal-buttons button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-save {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-save:hover {
+            background: #5568d3;
+        }
+
+        .btn-cancel {
+            background: #e0e0e0;
+            color: #555;
+        }
+
+        .btn-cancel:hover {
+            background: #d0d0d0;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .empty-state p {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        .empty-state small {
+            font-size: 0.95em;
+        }
+
+        .export-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            margin-top: 20px;
+        }
+
+        .export-btn:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .drop-zone {
+            min-height: 400px;
+            border: 3px dashed #ccc;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            background: #f8f9fa;
+        }
+
+        .drop-zone.drag-over {
+            border-color: #667eea;
+            background: #f0f3ff;
+            transform: scale(1.02);
+        }
+
+        .drop-zone-content {
+            text-align: center;
+            color: #999;
+            padding: 40px;
+        }
+
+        .drop-zone-content svg {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 15px;
+            opacity: 0.4;
+        }
+
+        #together.has-items .drop-zone {
+            display: none;
+        }
+
+        /* PDF Print Styles */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+                margin: 0;
+            }
+
+            .container {
+                box-shadow: none;
+                max-width: 100%;
+            }
+
+            .header, .tabs, .export-btn {
+                display: none !important;
+            }
+
+            .together-view {
+                padding: 0.5in;
+                font-family: 'Times New Roman', Times, serif;
+                color: black !important;
+            }
+
+            .together-view h2 {
+                display: none;
+            }
+
+            .pdf-header {
+                text-align: center;
+                margin-bottom: 15px;
+                page-break-after: avoid;
+            }
+
+            .pdf-header .name {
+                font-family: 'Times New Roman', Times, serif;
+                font-size: 14pt;
+                font-weight: bold;
+                color: black;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                margin-bottom: 3px;
+            }
+
+            .pdf-header .contact {
+                font-family: 'Times New Roman', Times, serif;
+                font-size: 10pt;
+                color: black;
+                margin-bottom: 2px;
+            }
+
+            .pdf-header .summary {
+                font-family: 'Times New Roman', Times, serif;
+                font-size: 10pt;
+                color: black;
+                font-style: italic;
+                margin-top: 3px;
+            }
+
+            .together-section {
+                margin-top: 15px;
+                padding: 0;
+                background: none !important;
+                page-break-inside: avoid;
+            }
+
+            .together-section:hover {
+                background: none;
+            }
+
+            .together-section h3 {
+                font-family: 'Times New Roman', Times, serif;
+                font-size: 10pt;
+                font-weight: bold;
+                color: black !important;
+                text-transform: uppercase;
+                margin-bottom: 10px;
+                border-bottom: 1px solid black;
+                padding-bottom: 3px;
+            }
+
+            .together-section h3::before {
+                display: none;
+            }
+
+            .together-item {
+                margin-bottom: 15px;
+                padding-bottom: 10px;
+                border-bottom: none;
+                page-break-inside: avoid;
+            }
+
+            .together-item .item-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: baseline;
+                font-family: 'Times New Roman', Times, serif;
+                margin-bottom: 5px;
+            }
+
+            .together-item .item-company-title {
+                font-family: 'Times New Roman', Times, serif;
+                font-size: 10pt;
+                color: black !important;
+                flex: 1;
+            }
+
+            .together-item .item-company-title strong {
+                font-weight: bold;
+            }
+
+            .together-item .item-date {
+                font-family: 'Times New Roman', Times, serif;
+                font-size: 10pt;
+                color: black !important;
+                white-space: nowrap;
+                margin-left: 10px;
+            }
+
+            .together-item .item-description {
+                font-family: 'Times New Roman', Times, serif;
+                font-size: 10pt;
+                color: black !important;
+                margin-top: 5px;
+                line-height: 1.4;
+                text-align: justify;
+                list-style: none;
+                padding-left: 0;
+            }
+
+            .together-item .item-description li {
+                margin-bottom: 5px;
+                padding-left: 15px;
+                text-indent: -15px;
+            }
+
+            .together-item .item-description li::before {
+                content: '• ';
+                margin-right: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 Portfolio Organizer</h1>
+            <p>Organize your courses and experience into a professional portfolio</p>
+            <button onclick="openProfileModal()" style="position: absolute; top: 20px; right: 180px; background: white; color: #667eea; border: 2px solid white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.95em; transition: all 0.3s;" onmouseover="this.style.background='#f0f3ff'" onmouseout="this.style.background='white'">⚙️ Profile</button>
+            <button onclick="openUploadModal()" style="position: absolute; top: 20px; right: 20px; background: white; color: #667eea; border: 2px solid white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.95em; transition: all 0.3s;" onmouseover="this.style.background='#f0f3ff'" onmouseout="this.style.background='white'">📤 Upload Resume</button>
+        </div>
+
+        <div class="tabs" id="tabs-container">
+            <div class="tab active" data-tab="courses">Courses</div>
+            <div class="tab" data-tab="experience">Experience</div>
+            <div class="tab" data-tab="together">Together</div>
+            <div class="tab add-tab-btn" onclick="openAddTabModal()" title="Add new tab">+</div>
+        </div>
+
+        <div class="tab-content active" id="courses">
+            <div class="items-grid" id="courses-grid"></div>
+            <button class="add-item-btn" onclick="openAddModal('course')">+ Add Course</button>
+        </div>
+
+        <div class="tab-content" id="experience">
+            <div class="items-grid" id="experience-grid"></div>
+            <button class="add-item-btn" onclick="openAddModal('experience')">+ Add Experience</button>
+        </div>
+
+        <div class="tab-content" id="together">
+            <div class="drop-zone" id="dropZone">
+                <div class="drop-zone-content">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <p style="font-size: 1.2em; font-weight: 600;">Drop items here</p>
+                    <small>Drag courses or experiences to this area, or click items to select them</small>
+                </div>
+            </div>
+            <div id="together-content"></div>
+        </div>
+    </div>
+
+    <!-- Modal for upload options -->
+    <div class="modal" id="uploadModal">
+        <div class="modal-content">
+            <h2>📤 Upload Resume</h2>
+            <p style="color: #666; margin-bottom: 20px;">Choose how to parse your resume:</p>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: flex; align-items: center; padding: 15px; border: 2px solid #667eea; border-radius: 8px; cursor: pointer; margin-bottom: 10px; background: #f0f3ff;" onmouseover="this.style.background='#e8ecff'" onmouseout="this.style.background='#f0f3ff'">
+                    <input type="radio" name="parseMethod" value="backend" checked style="margin-right: 10px; width: 20px; height: 20px;">
+                    <div>
+                        <strong>🔒 Use Backend Server (Recommended)</strong>
+                        <br>
+                        <small style="color: #666;">Secure AI parsing. No API key needed. Only works if server is running.</small>
+                    </div>
+                </label>
+
+                <label style="display: flex; align-items: center; padding: 15px; border: 2px solid #e0e0e0; border-radius: 8px; cursor: pointer; margin-bottom: 10px;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='white'">
+                    <input type="radio" name="parseMethod" value="ai" style="margin-right: 10px; width: 20px; height: 20px;">
+                    <div>
+                        <strong>🤖 AI with Your API Key</strong>
+                        <br>
+                        <small style="color: #666;">Use your own Groq API key. Good for testing.</small>
+                    </div>
+                </label>
+
+                <label style="display: flex; align-items: center; padding: 15px; border: 2px solid #e0e0e0; border-radius: 8px; cursor: pointer;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='white'">
+                    <input type="radio" name="parseMethod" value="basic" style="margin-right: 10px; width: 20px; height: 20px;">
+                    <div>
+                        <strong>⚙️ Basic Parsing</strong>
+                        <br>
+                        <small style="color: #666;">Simple pattern matching. May not work well.</small>
+                    </div>
+                </label>
+            </div>
+
+            <div id="apiKeySection" style="margin-bottom: 20px; display: none;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Groq API Key (Get one free at <a href="https://console.groq.com/keys" target="_blank">console.groq.com/keys</a>)</label>
+                <input type="text" id="groqApiKey" placeholder="gsk_..." style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-family: monospace;">
+                <small style="color: #666;">Your key is stored locally and never sent anywhere except Groq.</small>
+            </div>
+
+            <input type="file" id="resumeUpload" accept=".pdf,.docx" style="display: none;" onchange="handleResumeUpload(event)">
+
+            <div class="modal-buttons">
+                <button type="button" class="btn-cancel" onclick="closeUploadModal()">Cancel</button>
+                <button type="button" class="btn-save" onclick="document.getElementById('resumeUpload').click()">Choose File</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for profile -->
+    <div class="modal" id="profileModal">
+        <div class="modal-content">
+            <h2>Your Profile Information</h2>
+            <p style="color: #666; margin-bottom: 20px; font-size: 0.95em;">This information will appear in your exported portfolio. All fields are optional.</p>
+            <form id="profileForm">
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="profile-name" placeholder="e.g., John Doe">
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="profile-email" placeholder="e.g., john.doe@email.com">
+                </div>
+                <div class="form-group">
+                    <label>Phone Number</label>
+                    <input type="tel" id="profile-phone" placeholder="e.g., (123) 456-7890">
+                </div>
+                <div class="form-group">
+                    <label>LinkedIn Profile</label>
+                    <input type="url" id="profile-linkedin" placeholder="e.g., linkedin.com/in/johndoe">
+                </div>
+                <div class="form-group">
+                    <label>School</label>
+                    <input type="text" id="profile-school" placeholder="e.g., University of Example">
+                </div>
+                <div class="form-group">
+                    <label>Professional Summary (Optional)</label>
+                    <textarea id="profile-summary" placeholder="e.g., PhD-trained analytics leader translating ambiguity into product requirements..." style="min-height: 60px;"></textarea>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn-cancel" onclick="closeProfileModal()">Cancel</button>
+                    <button type="submit" class="btn-save">Save Profile</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal for adding tabs -->
+    <div class="modal" id="addTabModal">
+        <div class="modal-content">
+            <h2>Add New Tab</h2>
+            <form id="addTabForm">
+                <div class="form-group">
+                    <label>Tab Name *</label>
+                    <input type="text" id="input-tab-name" placeholder="e.g., Extracurricular" required>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn-cancel" onclick="closeAddTabModal()">Cancel</button>
+                    <button type="submit" class="btn-save">Create Tab</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal for adding items -->
+    <div class="modal" id="addModal">
+        <div class="modal-content">
+            <h2 id="modal-title">Add Item</h2>
+            <form id="addForm">
+                <div class="form-group">
+                    <label>Title *</label>
+                    <input type="text" id="input-title" required>
+                </div>
+                <div class="form-group">
+                    <label>Place *</label>
+                    <input type="text" id="input-place" required>
+                </div>
+                <div class="form-group">
+                    <label>Date/Duration *</label>
+                    <input type="text" id="input-date" placeholder="e.g., Jan 2024 - May 2024" required>
+                </div>
+                <div class="form-group">
+                    <label>Description *</label>
+                    <textarea id="input-description" required></textarea>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn-cancel" onclick="closeAddModal()">Cancel</button>
+                    <button type="submit" class="btn-save">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <script>
+        // Configure PDF.js worker
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+
+        // Data storage
+        let customTabs = []; // Array of custom tab names
+        let userProfile = {
+            name: '',
+            email: '',
+            phone: '',
+            linkedin: '',
+            school: '',
+            summary: ''
+        };
+        let sectionOrder = ['experience', 'courses']; // Track order of sections in Together view
+        let data = {
+            courses: [
+                {
+                    id: 1,
+                    title: "Full Stack Web Development",
+                    place: "Coursera - University of Michigan",
+                    date: "Jan 2024 - May 2024",
+                    description: "Comprehensive course covering HTML, CSS, JavaScript, React, Node.js, and database management. Built 5 full-stack projects including an e-commerce platform.",
+                    selected: false
+                },
+                {
+                    id: 2,
+                    title: "Machine Learning Specialization",
+                    place: "Stanford Online",
+                    date: "Jun 2024 - Aug 2024",
+                    description: "Advanced ML algorithms including supervised learning, neural networks, and deep learning. Implemented various models using Python and TensorFlow.",
+                    selected: false
+                }
+            ],
+            experience: [
+                {
+                    id: 1,
+                    title: "Software Engineer Intern",
+                    place: "Tech Corp Inc.",
+                    date: "May 2023 - Aug 2023",
+                    description: "Developed REST APIs using Node.js and Express. Collaborated with cross-functional teams to implement new features and optimize database queries, improving response time by 40%.",
+                    selected: false
+                },
+                {
+                    id: 2,
+                    title: "Research Assistant",
+                    place: "University Research Lab",
+                    date: "Sep 2022 - Dec 2023",
+                    description: "Conducted research on natural language processing and machine learning. Published 2 papers and presented findings at international conferences.",
+                    selected: false
+                }
+            ]
+        };
+
+        let currentType = '';
+        let currentEditId = null;
+        let isEditMode = false;
+        let nextId = { courses: 3, experience: 3 };
+
+        // Initialize
+        function init() {
+            renderTabs();
+            renderItems();
+            updateTogetherView();
+            setupTabs();
+        }
+
+        // Tab management
+        function renderTabs() {
+            const tabsContainer = document.getElementById('tabs-container');
+            const addButton = tabsContainer.querySelector('.add-tab-btn');
+
+            // Remove custom tabs
+            document.querySelectorAll('.tab.custom-tab').forEach(tab => tab.remove());
+            document.querySelectorAll('.tab-content.custom-tab-content').forEach(content => content.remove());
+
+            // Add custom tabs before the "Together" tab
+            const togetherTab = document.querySelector('[data-tab="together"]');
+            customTabs.forEach(tabName => {
+                const tabId = tabName.toLowerCase().replace(/\s+/g, '-');
+
+                // Create tab button
+                const tab = document.createElement('div');
+                tab.className = 'tab custom-tab';
+                tab.dataset.tab = tabId;
+                tab.innerHTML = `
+                    ${tabName}
+                    <button class="delete-tab-btn" onclick="deleteTab('${tabName}'); event.stopPropagation();" title="Delete tab">×</button>
+                `;
+                tabsContainer.insertBefore(tab, togetherTab);
+
+                // Create tab content
+                const content = document.createElement('div');
+                content.className = 'tab-content custom-tab-content';
+                content.id = tabId;
+                content.innerHTML = `
+                    <div class="items-grid" id="${tabId}-grid"></div>
+                    <button class="add-item-btn" onclick="openAddModal('${tabId}')">+ Add Item</button>
+                `;
+                document.getElementById('together').parentNode.insertBefore(content, document.getElementById('together'));
+            });
+
+            setupTabs();
+        }
+
+        function openAddTabModal() {
+            document.getElementById('addTabModal').classList.add('active');
+            document.getElementById('addTabForm').reset();
+        }
+
+        function closeAddTabModal() {
+            document.getElementById('addTabModal').classList.remove('active');
+        }
+
+        function openProfileModal() {
+            document.getElementById('profile-name').value = userProfile.name;
+            document.getElementById('profile-email').value = userProfile.email;
+            document.getElementById('profile-phone').value = userProfile.phone;
+            document.getElementById('profile-linkedin').value = userProfile.linkedin;
+            document.getElementById('profile-school').value = userProfile.school;
+            document.getElementById('profile-summary').value = userProfile.summary;
+            document.getElementById('profileModal').classList.add('active');
+        }
+
+        function closeProfileModal() {
+            document.getElementById('profileModal').classList.remove('active');
+        }
+
+        document.getElementById('profileForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            userProfile.name = document.getElementById('profile-name').value.trim();
+            userProfile.email = document.getElementById('profile-email').value.trim();
+            userProfile.phone = document.getElementById('profile-phone').value.trim();
+            userProfile.linkedin = document.getElementById('profile-linkedin').value.trim();
+            userProfile.school = document.getElementById('profile-school').value.trim();
+            userProfile.summary = document.getElementById('profile-summary').value.trim();
+            closeProfileModal();
+            updateTogetherView();
+        });
+
+        function deleteTab(tabName) {
+            if (confirm(`Are you sure you want to delete the "${tabName}" tab? All items in this tab will be lost.`)) {
+                const tabId = tabName.toLowerCase().replace(/\s+/g, '-');
+                customTabs = customTabs.filter(t => t !== tabName);
+                delete data[tabId];
+                delete nextId[tabId];
+                renderTabs();
+
+                // Switch to courses tab
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                document.querySelector('[data-tab="courses"]').classList.add('active');
+                document.getElementById('courses').classList.add('active');
+            }
+        }
+
+        document.getElementById('addTabForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const tabName = document.getElementById('input-tab-name').value.trim();
+
+            if (tabName && !customTabs.includes(tabName)) {
+                const tabId = tabName.toLowerCase().replace(/\s+/g, '-');
+                customTabs.push(tabName);
+                data[tabId] = [];
+                nextId[tabId] = 1;
+                renderTabs();
+                renderItems();
+                closeAddTabModal();
+
+                // Switch to the new tab
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+                document.getElementById(tabId).classList.add('active');
+            }
+        });
+
+        // Tab switching
+        function setupTabs() {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabName = tab.dataset.tab;
+
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+                    tab.classList.add('active');
+                    document.getElementById(tabName).classList.add('active');
+                });
+            });
+        }
+
+        // Render items
+        function renderItems() {
+            renderCourses();
+            renderExperience();
+
+            // Render custom tabs
+            customTabs.forEach(tabName => {
+                const tabId = tabName.toLowerCase().replace(/\s+/g, '-');
+                const grid = document.getElementById(`${tabId}-grid`);
+                if (grid && data[tabId]) {
+                    grid.innerHTML = data[tabId].map(item => createItemCard(item, tabId)).join('');
+                    addCardListeners(tabId);
+                }
+            });
+        }
+
+        function renderCourses() {
+            const grid = document.getElementById('courses-grid');
+            grid.innerHTML = data.courses.map(item => createItemCard(item, 'courses')).join('');
+            addCardListeners('courses');
+        }
+
+        function renderExperience() {
+            const grid = document.getElementById('experience-grid');
+            grid.innerHTML = data.experience.map(item => createItemCard(item, 'experience')).join('');
+            addCardListeners('experience');
+        }
+
+        function createItemCard(item, type) {
+            return `
+                <div class="item-card ${item.selected ? 'selected' : ''}"
+                     data-id="${item.id}"
+                     data-type="${type}"
+                     draggable="true">
+                    <div class="drag-handle" style="position: absolute; top: 10px; left: 10px; color: #999; font-size: 1.2em;" title="Drag to Together tab">⋮⋮</div>
+                    <button class="edit-btn" onclick="openEditModal('${type}', ${item.id}); event.stopPropagation();" title="Edit">✎</button>
+                    <button class="delete-btn" onclick="deleteItem('${type}', ${item.id}); event.stopPropagation();" title="Delete">×</button>
+                    <div class="title">${item.title}</div>
+                    <div class="place">${item.place}</div>
+                    <div class="date">${item.date}</div>
+                    <div class="description">${item.description}</div>
+                </div>
+            `;
+        }
+
+        function addCardListeners(type) {
+            const cards = document.querySelectorAll(`#${type}-grid .item-card`);
+            cards.forEach(card => {
+                let isDragging = false;
+                let dragStartTime = 0;
+
+                card.addEventListener('mousedown', () => {
+                    dragStartTime = Date.now();
+                });
+
+                card.addEventListener('click', (e) => {
+                    // Only toggle if it wasn't a drag operation
+                    const timeDiff = Date.now() - dragStartTime;
+                    if (!isDragging && timeDiff < 200) {
+                        toggleSelection(card, type);
+                    }
+                    isDragging = false;
+                });
+
+                card.addEventListener('dragstart', (e) => {
+                    isDragging = true;
+                    handleDragStart(e);
+                });
+
+                card.addEventListener('dragend', (e) => {
+                    handleDragEnd(e);
+                    setTimeout(() => { isDragging = false; }, 100);
+                });
+            });
+        }
+
+        function toggleSelection(card, type) {
+            const id = parseInt(card.dataset.id);
+            const item = data[type].find(i => i.id === id);
+            item.selected = !item.selected;
+            card.classList.toggle('selected');
+            updateTogetherView();
+        }
+
+        // Drag and drop
+        function handleDragStart(e) {
+            console.log('Drag started!', e.target.dataset);
+            e.target.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'copy';
+            e.dataTransfer.setData('text/plain', JSON.stringify({
+                id: parseInt(e.target.dataset.id),
+                type: e.target.dataset.type
+            }));
+
+            // Add visual feedback
+            e.dataTransfer.setDragImage(e.target, 50, 50);
+        }
+
+        function handleDragEnd(e) {
+            console.log('Drag ended!');
+            e.target.classList.remove('dragging');
+        }
+
+        // Setup drop zone on Together tab
+        document.addEventListener('DOMContentLoaded', () => {
+            const togetherTab = document.getElementById('together');
+            const dropZone = document.getElementById('dropZone');
+            const togetherContent = document.getElementById('together-content');
+
+            // Add dragover to entire together tab and drop zone
+            [togetherTab, dropZone, togetherContent].forEach(element => {
+                if (!element) return;
+
+                element.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.dataTransfer.dropEffect = 'copy';
+                    console.log('Drag over Together tab');
+                    if (dropZone) dropZone.classList.add('drag-over');
+                });
+
+                element.addEventListener('dragenter', (e) => {
+                    e.preventDefault();
+                    console.log('Drag entered Together tab');
+                });
+
+                element.addEventListener('dragleave', (e) => {
+                    if (e.target === element && dropZone) {
+                        dropZone.classList.remove('drag-over');
+                    }
+                });
+
+                element.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Item dropped!');
+                    if (dropZone) dropZone.classList.remove('drag-over');
+
+                    try {
+                        const dropData = JSON.parse(e.dataTransfer.getData('text/plain'));
+                        console.log('Drop data:', dropData);
+                        handleDrop(dropData);
+                    } catch (error) {
+                        console.error('Error parsing drop data:', error);
+                    }
+                });
+            });
+
+            init();
+        });
+
+        function handleDrop(dropData) {
+            const item = data[dropData.type].find(i => i.id === dropData.id);
+            if (item) {
+                item.selected = true;
+                renderItems();
+                updateTogetherView();
+
+                // Switch to Together tab
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                document.querySelector('[data-tab="together"]').classList.add('active');
+                document.getElementById('together').classList.add('active');
+            }
+        }
+
+        // Date parsing helper
+        function parseStartDate(dateStr) {
+            // Extract the first date from strings like "Jan 2024 - May 2024" or "Jun 2024"
+            const match = dateStr.match(/([A-Za-z]+)\s+(\d{4})/);
+            if (match) {
+                const monthMap = {
+                    'jan': 0, 'january': 0,
+                    'feb': 1, 'february': 1,
+                    'mar': 2, 'march': 2,
+                    'apr': 3, 'april': 3,
+                    'may': 4,
+                    'jun': 5, 'june': 5,
+                    'jul': 6, 'july': 6,
+                    'aug': 7, 'august': 7,
+                    'sep': 8, 'september': 8,
+                    'oct': 9, 'october': 9,
+                    'nov': 10, 'november': 10,
+                    'dec': 11, 'december': 11
+                };
+                const month = monthMap[match[1].toLowerCase()];
+                const year = parseInt(match[2]);
+                return new Date(year, month);
+            }
+            return new Date(0); // Default to earliest date if can't parse
+        }
+
+        // Update Together view
+        function updateTogetherView() {
+            const selectedCourses = data.courses.filter(c => c.selected);
+            const selectedExperience = data.experience.filter(e => e.selected);
+
+            // Get items from custom tabs
+            const customTabItems = {};
+            customTabs.forEach(tabName => {
+                const tabId = tabName.toLowerCase().replace(/\s+/g, '-');
+                if (data[tabId]) {
+                    customTabItems[tabName] = data[tabId].filter(item => item.selected);
+                }
+            });
+
+            const container = document.getElementById('together-content');
+            const togetherTab = document.getElementById('together');
+            const dropZone = document.getElementById('dropZone');
+
+            // Check if any items are selected
+            const hasItems = selectedCourses.length > 0 || selectedExperience.length > 0 ||
+                Object.values(customTabItems).some(items => items.length > 0);
+
+            if (!hasItems) {
+                container.innerHTML = '';
+                togetherTab.classList.remove('has-items');
+                if (dropZone) dropZone.style.display = 'flex';
+                return;
+            }
+
+            togetherTab.classList.add('has-items');
+            if (dropZone) dropZone.style.display = 'none';
+
+            // Build sections map
+            const sectionsMap = {};
+            if (selectedExperience.length > 0) {
+                sectionsMap['experience'] = {
+                    title: 'Work Experience',
+                    items: [...selectedExperience].sort((a, b) => parseStartDate(a.date) - parseStartDate(b.date))
+                };
+            }
+            if (selectedCourses.length > 0) {
+                sectionsMap['courses'] = {
+                    title: 'Courses & Certifications',
+                    items: [...selectedCourses].sort((a, b) => parseStartDate(a.date) - parseStartDate(b.date))
+                };
+            }
+            Object.entries(customTabItems).forEach(([tabName, items]) => {
+                if (items.length > 0) {
+                    const tabId = tabName.toLowerCase().replace(/\s+/g, '-');
+                    sectionsMap[tabId] = {
+                        title: tabName,
+                        items: [...items].sort((a, b) => parseStartDate(a.date) - parseStartDate(b.date))
+                    };
+                }
+            });
+
+            // Update section order to include only visible sections
+            sectionOrder = sectionOrder.filter(id => sectionsMap[id]);
+            // Add any new sections that aren't in the order yet
+            Object.keys(sectionsMap).forEach(id => {
+                if (!sectionOrder.includes(id)) {
+                    sectionOrder.push(id);
+                }
+            });
+
+            let html = '<div class="together-view">';
+
+            // Add profile header for PDF
+            html += '<div class="pdf-header">';
+            if (userProfile.name) {
+                html += `<div class="name">${userProfile.name.toUpperCase()}</div>`;
+            }
+            let contactParts = [];
+            if (userProfile.email) contactParts.push(userProfile.email);
+            if (userProfile.phone) contactParts.push(userProfile.phone);
+            if (userProfile.linkedin) contactParts.push(userProfile.linkedin);
+            if (contactParts.length > 0) {
+                html += `<div class="contact">${contactParts.join(' | ')}</div>`;
+            }
+            if (userProfile.summary) {
+                html += `<div class="summary">${userProfile.summary}</div>`;
+            }
+            html += '</div>';
+
+            html += '<h2>My Portfolio</h2>';
+
+            // Render sections in order
+            sectionOrder.forEach((sectionId, index) => {
+                const section = sectionsMap[sectionId];
+                if (section) {
+                    html += `<div class="together-section" draggable="true" data-section-id="${sectionId}" data-section-index="${index}">`;
+                    html += `<h3>${section.title}</h3>`;
+                    section.items.forEach(item => {
+                        // Extract location from place (text after last '-', '|', or comma)
+                        let company = item.place;
+                        let location = '';
+                        const locationMatch = company.match(/[,\-\|]\s*([^,\-\|]+)$/);
+                        if (locationMatch) {
+                            location = locationMatch[1].trim();
+                            company = company.substring(0, company.lastIndexOf(locationMatch[0])).trim();
+                        }
+
+                        // Split description into bullet points
+                        const bullets = item.description
+                            .split(/[•\n]/)
+                            .map(b => b.trim())
+                            .filter(b => b && b.length > 10);
+
+                        let descriptionHtml = '';
+                        if (bullets.length > 0) {
+                            if (bullets.length > 1) {
+                                // Multiple bullets - render as list
+                                descriptionHtml = '<ul class="item-description">';
+                                bullets.forEach(bullet => {
+                                    descriptionHtml += `<li>${bullet}</li>`;
+                                });
+                                descriptionHtml += '</ul>';
+                            } else if (bullets[0] && bullets[0].trim()) {
+                                // Single paragraph - render as text with bullet
+                                descriptionHtml = `<ul class="item-description"><li>${bullets[0]}</li></ul>`;
+                            }
+                        }
+                        // If no description, descriptionHtml stays empty
+
+                        html += `
+                            <div class="together-item">
+                                <div class="item-header">
+                                    <span class="item-company-title">
+                                        <strong>${company}</strong> | ${item.title} | ${location}
+                                    </span>
+                                    <span class="item-date">${item.date}</span>
+                                </div>
+                                ${descriptionHtml}
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                }
+            });
+
+            html += '<button class="export-btn" onclick="exportPDF()">📄 Export as PDF</button>';
+            html += '</div>';
+
+            container.innerHTML = html;
+
+            // Add drag and drop for sections
+            setupSectionDragDrop();
+        }
+
+        function setupSectionDragDrop() {
+            const sections = document.querySelectorAll('.together-section');
+            let draggedSection = null;
+
+            sections.forEach(section => {
+                section.addEventListener('dragstart', (e) => {
+                    draggedSection = section;
+                    section.classList.add('dragging-section');
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+
+                section.addEventListener('dragend', (e) => {
+                    section.classList.remove('dragging-section');
+                });
+
+                section.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    if (draggedSection && draggedSection !== section) {
+                        const rect = section.getBoundingClientRect();
+                        const midpoint = rect.top + rect.height / 2;
+                        if (e.clientY < midpoint) {
+                            section.parentNode.insertBefore(draggedSection, section);
+                        } else {
+                            section.parentNode.insertBefore(draggedSection, section.nextSibling);
+                        }
+                    }
+                });
+
+                section.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    if (draggedSection) {
+                        // Update section order
+                        const newOrder = [];
+                        document.querySelectorAll('.together-section').forEach(s => {
+                            newOrder.push(s.dataset.sectionId);
+                        });
+                        sectionOrder = newOrder;
+                    }
+                });
+            });
+        }
+
+        // Modal functions
+        function getModalTitle(type, isEdit = false) {
+            const prefix = isEdit ? 'Edit' : 'Add';
+            if (type === 'courses') return `${prefix} Course`;
+            if (type === 'experience') return `${prefix} Experience`;
+            // For custom tabs, capitalize first letter
+            const tabName = customTabs.find(t => t.toLowerCase().replace(/\s+/g, '-') === type) || type;
+            return `${prefix} ${tabName} Item`;
+        }
+
+        function openAddModal(type) {
+            currentType = type;
+            isEditMode = false;
+            currentEditId = null;
+            document.getElementById('modal-title').textContent = getModalTitle(type, false);
+            document.getElementById('addModal').classList.add('active');
+            document.getElementById('addForm').reset();
+        }
+
+        function openEditModal(type, id) {
+            currentType = type;
+            isEditMode = true;
+            currentEditId = id;
+            const item = data[type].find(i => i.id === id);
+
+            if (item) {
+                document.getElementById('modal-title').textContent = getModalTitle(type, true);
+                document.getElementById('input-title').value = item.title;
+                document.getElementById('input-place').value = item.place;
+                document.getElementById('input-date').value = item.date;
+                document.getElementById('input-description').value = item.description;
+                document.getElementById('addModal').classList.add('active');
+            }
+        }
+
+        function closeAddModal() {
+            document.getElementById('addModal').classList.remove('active');
+            isEditMode = false;
+            currentEditId = null;
+        }
+
+        function deleteItem(type, id) {
+            if (confirm('Are you sure you want to delete this item?')) {
+                data[type] = data[type].filter(item => item.id !== id);
+                renderItems();
+                updateTogetherView();
+            }
+        }
+
+        document.getElementById('addForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            if (isEditMode && currentEditId !== null) {
+                // Edit existing item
+                const item = data[currentType].find(i => i.id === currentEditId);
+                if (item) {
+                    item.title = document.getElementById('input-title').value;
+                    item.place = document.getElementById('input-place').value;
+                    item.date = document.getElementById('input-date').value;
+                    item.description = document.getElementById('input-description').value;
+                }
+            } else {
+                // Add new item
+                const newItem = {
+                    id: nextId[currentType]++,
+                    title: document.getElementById('input-title').value,
+                    place: document.getElementById('input-place').value,
+                    date: document.getElementById('input-date').value,
+                    description: document.getElementById('input-description').value,
+                    selected: false
+                };
+                data[currentType].push(newItem);
+            }
+
+            renderItems();
+            updateTogetherView();
+            closeAddModal();
+        });
+
+        // Export function
+        function exportPDF() {
+            alert('Export feature: In a full implementation, this would generate a PDF of your portfolio. For now, you can use your browser\'s Print function (Ctrl/Cmd + P) and save as PDF!');
+            window.print();
+        }
+
+        // Close modals when clicking outside
+        document.getElementById('addModal').addEventListener('click', (e) => {
+            if (e.target.id === 'addModal') {
+                closeAddModal();
+            }
+        });
+
+        document.getElementById('addTabModal').addEventListener('click', (e) => {
+            if (e.target.id === 'addTabModal') {
+                closeAddTabModal();
+            }
+        });
+
+        document.getElementById('profileModal').addEventListener('click', (e) => {
+            if (e.target.id === 'profileModal') {
+                closeProfileModal();
+            }
+        });
+
+        document.getElementById('uploadModal').addEventListener('click', (e) => {
+            if (e.target.id === 'uploadModal') {
+                closeUploadModal();
+            }
+        });
+
+        // Upload modal functions
+        function openUploadModal() {
+            // Load saved API key if exists
+            const savedKey = localStorage.getItem('groqApiKey');
+            if (savedKey) {
+                document.getElementById('groqApiKey').value = savedKey;
+            }
+
+            // Show/hide API key section based on method
+            const apiKeySection = document.getElementById('apiKeySection');
+            document.querySelectorAll('input[name="parseMethod"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    apiKeySection.style.display = e.target.value === 'ai' ? 'block' : 'none';
+                });
+            });
+
+            document.getElementById('uploadModal').classList.add('active');
+        }
+
+        function closeUploadModal() {
+            document.getElementById('uploadModal').classList.remove('active');
+        }
+
+        // Resume upload and parsing
+        async function handleResumeUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            closeUploadModal();
+
+            const useAI = document.querySelector('input[name="parseMethod"]:checked').value === 'ai';
+
+            try {
+                let text = '';
+                if (file.type === 'application/pdf') {
+                    text = await parsePDF(file);
+                } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+                    text = await parseDOCX(file);
+                } else {
+                    alert('Please upload a PDF or DOCX file.');
+                    return;
+                }
+
+                let itemCount = 0;
+                const parseMethod = document.querySelector('input[name="parseMethod"]:checked').value;
+
+                if (parseMethod === 'backend') {
+                    // Use backend server
+                    itemCount = await parseResumeWithAI(text, 'use-backend');
+                } else if (parseMethod === 'ai') {
+                    // Use client-side with user's API key
+                    const apiKey = document.getElementById('groqApiKey').value.trim();
+                    if (!apiKey) {
+                        alert('Please enter your Groq API key or use Backend Server.');
+                        openUploadModal();
+                        return;
+                    }
+
+                    // Save API key
+                    localStorage.setItem('groqApiKey', apiKey);
+                    itemCount = await parseResumeWithAI(text, apiKey);
+                } else {
+                    // Use basic parsing
+                    itemCount = parseResumeContent(text);
+                }
+
+                if (itemCount > 0) {
+                    alert(`✅ Resume imported successfully!\n\n${itemCount} items added. Check all tabs for your content.`);
+                } else {
+                    alert('⚠️ Resume parsed but no items were found.\n\nTry using AI-powered parsing for better results.');
+                }
+            } catch (error) {
+                console.error('Error parsing resume:', error);
+                alert('❌ Error parsing resume: ' + error.message + '\n\nPlease try again or add items manually.');
+            }
+
+            // Reset file input
+            event.target.value = '';
+        }
+
+        // AI-powered resume parsing
+        async function parseResumeWithAI(text, apiKey) {
+            console.log('Using AI to parse resume...');
+
+            // Check if we're using a backend server or client-side API
+            const useBackend = apiKey === 'use-backend';
+
+            try {
+                let parsed;
+
+                if (useBackend) {
+                    // Call our backend server
+                    const serverUrl = window.location.origin;
+                    const response = await fetch(`${serverUrl}/api/parse-resume`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ resumeText: text })
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.error || 'Server error');
+                    }
+
+                    const result = await response.json();
+                    parsed = result.data;
+                } else {
+                    // Client-side API call (original method)
+                    const prompt = `You are a resume parser. Extract work experience, education, skills, and other sections from this resume. Return ONLY valid JSON (no markdown, no explanations) in this exact format:
+
+{
+  "profile": {
+    "name": "Full Name",
+    "email": "email@example.com",
+    "phone": "123-456-7890",
+    "linkedin": "linkedin.com/in/username",
+    "summary": "Professional summary"
+  },
+  "experience": [
+    {
+      "company": "Company Name",
+      "title": "Job Title",
+      "location": "City, State",
+      "date": "Month YYYY - Month YYYY",
+      "description": "Bullet point 1. Bullet point 2. Bullet point 3."
+    }
+  ],
+  "education": [
+    {
+      "school": "University Name",
+      "degree": "Degree Name",
+      "location": "City, State",
+      "date": "Month YYYY",
+      "description": "Details about degree, honors, etc."
+    }
+  ],
+  "skills": ["skill1", "skill2", "skill3"],
+  "leadership": ["Activity 1", "Activity 2"]
+}
+
+Resume text:
+${text}`;
+
+                    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${apiKey}`
+                        },
+                        body: JSON.stringify({
+                            model: 'llama-3.3-70b-versatile',
+                            messages: [{
+                                role: 'user',
+                                content: prompt
+                            }],
+                            temperature: 0.1,
+                            max_tokens: 4000
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Groq API error: ${response.statusText}`);
+                    }
+
+                    const result = await response.json();
+                    const content = result.choices[0].message.content;
+
+                    console.log('AI response:', content);
+                    parsed = JSON.parse(content);
+                }
+
+                return populateFromAI(parsed);
+            } catch (error) {
+                console.error('AI parsing error:', error);
+                throw new Error('AI parsing failed: ' + error.message);
+            }
+        }
+
+        function populateFromAI(parsed) {
+            let totalItems = 0;
+
+            // Set profile
+            if (parsed.profile) {
+                userProfile.name = parsed.profile.name || '';
+                userProfile.email = parsed.profile.email || '';
+                userProfile.phone = parsed.profile.phone || '';
+                userProfile.linkedin = parsed.profile.linkedin || '';
+                userProfile.summary = parsed.profile.summary || '';
+            }
+
+            // Add experience
+            if (parsed.experience && parsed.experience.length > 0) {
+                parsed.experience.forEach(item => {
+                    data.experience.push({
+                        id: nextId.experience++,
+                        title: item.title,
+                        place: item.location ? `${item.company}, ${item.location}` : item.company,
+                        date: item.date,
+                        description: item.description,
+                        selected: false
+                    });
+                    totalItems++;
+                });
+            }
+
+            // Add education
+            if (parsed.education && parsed.education.length > 0) {
+                if (!data.education) {
+                    customTabs.push('Education');
+                    data.education = [];
+                    nextId.education = 1;
+                }
+
+                parsed.education.forEach(item => {
+                    data.education.push({
+                        id: nextId.education++,
+                        title: item.degree,
+                        place: item.location ? `${item.school}, ${item.location}` : item.school,
+                        date: item.date,
+                        description: item.description || '',
+                        selected: false
+                    });
+                    totalItems++;
+                });
+            }
+
+            // Add skills
+            if (parsed.skills && parsed.skills.length > 0) {
+                if (!data.skills) {
+                    customTabs.push('Skills');
+                    data.skills = [];
+                    nextId.skills = 1;
+                }
+
+                data.skills.push({
+                    id: nextId.skills++,
+                    title: 'Technical Skills',
+                    place: 'Skills',
+                    date: '',
+                    description: parsed.skills.join(', '),
+                    selected: false
+                });
+                totalItems++;
+            }
+
+            // Add leadership/activities
+            if (parsed.leadership && parsed.leadership.length > 0) {
+                if (!data.leadership) {
+                    customTabs.push('Leadership & Activities');
+                    data.leadership = [];
+                    nextId.leadership = 1;
+                }
+
+                parsed.leadership.forEach(activity => {
+                    data.leadership.push({
+                        id: nextId.leadership++,
+                        title: activity,
+                        place: 'Activity',
+                        date: '',
+                        description: activity,
+                        selected: false
+                    });
+                    totalItems++;
+                });
+            }
+
+            // Refresh UI
+            renderTabs();
+            renderItems();
+            updateTogetherView();
+
+            return totalItems;
+        }
+
+        async function parsePDF(file) {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            let fullText = '';
+
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const textContent = await page.getTextContent();
+                const pageText = textContent.items.map(item => item.str).join(' ');
+                fullText += pageText + '\n';
+            }
+
+            return fullText;
+        }
+
+        async function parseDOCX(file) {
+            const arrayBuffer = await file.arrayBuffer();
+            const result = await mammoth.extractRawText({ arrayBuffer });
+            return result.value;
+        }
+
+        function parseResumeContent(text) {
+            console.log('Parsing resume, text length:', text.length);
+
+            // Extract profile information
+            const emailMatch = text.match(/[\w\.-]+@[\w\.-]+\.\w+/);
+            const phoneMatch = text.match(/\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
+            const linkedinMatch = text.match(/linkedin\.com\/in\/[\w-]+/);
+
+            // Extract name (usually first line or before email)
+            const lines = text.split('\n').filter(l => l.trim());
+            const nameMatch = lines[0];
+
+            if (nameMatch && nameMatch.length < 50 && !nameMatch.includes('@')) {
+                userProfile.name = nameMatch.trim();
+            }
+            if (emailMatch) userProfile.email = emailMatch[0];
+            if (phoneMatch) userProfile.phone = phoneMatch[0];
+            if (linkedinMatch) userProfile.linkedin = linkedinMatch[0];
+
+            // Look for summary/tagline (usually after contact info, before first section)
+            const summaryMatch = text.match(/(?:[\w\.-]+@[\w\.-]+\.\w+[^\n]*\n)([^\n]+(?:leader|professional|expert|specialist)[^\n]+)/i);
+            if (summaryMatch) {
+                userProfile.summary = summaryMatch[1].trim();
+            }
+
+            console.log('Profile extracted:', userProfile);
+
+            // Find sections
+            const sections = identifySections(text);
+            console.log('Found sections:', sections.map(s => `${s.title} (${s.content.length} chars)`).join(', '));
+
+            let totalItems = 0;
+
+            // Parse each section
+            sections.forEach(section => {
+                const tabId = mapSectionToTab(section.title);
+                console.log(`Processing section "${section.title}" -> tab "${tabId}"`);
+
+                const items = parseSection(section.content);
+                console.log(`  Found ${items.length} items`);
+
+                // Create tab if it doesn't exist
+                if (tabId && !data[tabId]) {
+                    if (tabId !== 'courses' && tabId !== 'experience') {
+                        const tabName = section.title;
+                        customTabs.push(tabName);
+                        data[tabId] = [];
+                        nextId[tabId] = 1;
+                    }
+                }
+
+                // Add items to the tab
+                if (tabId && data[tabId]) {
+                    items.forEach(item => {
+                        console.log('  Adding item:', item.title);
+                        data[tabId].push({
+                            id: nextId[tabId]++,
+                            ...item,
+                            selected: false
+                        });
+                        totalItems++;
+                    });
+                }
+            });
+
+            console.log(`Total items imported: ${totalItems}`);
+
+            // Refresh the UI
+            renderTabs();
+            renderItems();
+            updateTogetherView();
+
+            return totalItems;
+        }
+
+        function identifySections(text) {
+            const sectionHeaders = [
+                'WORK EXPERIENCE', 'EXPERIENCE', 'PROFESSIONAL EXPERIENCE',
+                'EDUCATION', 'ACADEMIC BACKGROUND',
+                'SKILLS', 'TECHNICAL SKILLS',
+                'PROJECTS', 'RESEARCH',
+                'LEADERSHIP', 'ACTIVITIES', 'LEADERSHIP & ACTIVITIES',
+                'CERTIFICATIONS', 'CERTIFICATES',
+                'COURSES', 'COURSEWORK'
+            ];
+
+            const sections = [];
+            const lines = text.split('\n');
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                const upperLine = line.toUpperCase();
+
+                // Check if this line is a section header
+                for (const header of sectionHeaders) {
+                    if (upperLine === header || upperLine.startsWith(header)) {
+                        // Find the next section or end of text
+                        let endIndex = lines.length;
+                        for (let j = i + 1; j < lines.length; j++) {
+                            const nextLine = lines[j].trim().toUpperCase();
+                            if (sectionHeaders.some(h => nextLine === h || nextLine.startsWith(h))) {
+                                endIndex = j;
+                                break;
+                            }
+                        }
+
+                        sections.push({
+                            title: header,
+                            content: lines.slice(i + 1, endIndex).join('\n')
+                        });
+                        break;
+                    }
+                }
+            }
+
+            return sections;
+        }
+
+        function mapSectionToTab(sectionTitle) {
+            const upper = sectionTitle.toUpperCase();
+            if (upper.includes('WORK') || upper.includes('EXPERIENCE') || upper.includes('PROFESSIONAL')) {
+                return 'experience';
+            }
+            if (upper.includes('EDUCATION') || upper.includes('ACADEMIC')) {
+                return 'education';
+            }
+            if (upper.includes('COURSE')) {
+                return 'courses';
+            }
+            if (upper.includes('SKILL')) {
+                return 'skills';
+            }
+            if (upper.includes('PROJECT')) {
+                return 'projects';
+            }
+            if (upper.includes('LEADERSHIP') || upper.includes('ACTIVITIES')) {
+                return 'leadership';
+            }
+            if (upper.includes('CERTIFICATION') || upper.includes('CERTIFICATE')) {
+                return 'certifications';
+            }
+            // Return the original title for custom tabs
+            return sectionTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        }
+
+        function parseSection(content) {
+            const items = [];
+
+            // Super simple pattern: looks for "anything | anything | anything Month YYYY - Month YYYY"
+            // This matches: "Company | Title | Location Jan 2026 - Apr 2026"
+            const fullPattern = /([^|•\n]+?)\s*\|\s*([^|•\n]+?)\s*\|\s*([^|•\n]+?)\s+((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}\s*[-–]\s*(?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}|Present))/gi;
+
+            let match;
+            const matches = [];
+
+            // Find all matches with the full pattern first
+            while ((match = fullPattern.exec(content)) !== null) {
+                matches.push({
+                    company: match[1].trim(),
+                    title: match[2].trim(),
+                    location: match[3].trim(),
+                    date: match[4].trim(),
+                    startIndex: match.index,
+                    endIndex: match.index + match[0].length
+                });
+            }
+
+            console.log('Found matches with full pattern:', matches.length);
+
+            // Extract description for each match
+            for (let i = 0; i < matches.length; i++) {
+                const current = matches[i];
+                const next = matches[i + 1];
+
+                // Get text after this item until the next item (or end)
+                const descStart = current.endIndex;
+                const descEnd = next ? next.startIndex : content.length;
+                const descText = content.substring(descStart, descEnd);
+
+                // Extract bullet points
+                const bullets = descText.split('•')
+                    .map(b => b.trim())
+                    .filter(b => b && b.length > 10 && !b.match(/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i));
+
+                if (bullets.length > 0) {
+                    items.push({
+                        title: current.title || 'Position',
+                        place: current.location ? `${current.company}, ${current.location}` : current.company,
+                        date: current.date,
+                        description: bullets.join(' ').substring(0, 500)
+                    });
+                }
+            }
+
+            // If no matches with full pattern, try simpler pattern (just date)
+            if (items.length === 0) {
+                console.log('Trying simpler pattern without pipes...');
+                const datePattern = /((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}\s*[-–]\s*(?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}|Present))/gi;
+
+                let dateMatch;
+                const dates = [];
+
+                while ((dateMatch = datePattern.exec(content)) !== null) {
+                    dates.push({
+                        date: dateMatch[1],
+                        index: dateMatch.index
+                    });
+                }
+
+                console.log('Found dates:', dates.length);
+
+                for (let i = 0; i < dates.length; i++) {
+                    const current = dates[i];
+                    const next = dates[i + 1];
+
+                    // Get 100 chars before date for title/company
+                    const beforeStart = Math.max(0, current.index - 100);
+                    const beforeText = content.substring(beforeStart, current.index).trim();
+                    const beforeParts = beforeText.split(/[•\n]/).filter(p => p.trim());
+                    const headerText = beforeParts[beforeParts.length - 1] || '';
+
+                    // Get text after date until next date
+                    const afterStart = current.index + current.date.length;
+                    const afterEnd = next ? next.index : content.length;
+                    const afterText = content.substring(afterStart, afterEnd);
+
+                    // Extract bullets
+                    const bullets = afterText.split('•')
+                        .map(b => b.trim())
+                        .filter(b => b && b.length > 10);
+
+                    if (bullets.length > 0 && headerText) {
+                        // Try to parse header
+                        const headerParts = headerText.split('|').map(p => p.trim());
+                        const company = headerParts[0] || 'Company';
+                        const title = headerParts[1] || headerParts[0] || 'Position';
+                        const location = headerParts[2] || '';
+
+                        items.push({
+                            title: title,
+                            place: location ? `${company}, ${location}` : company,
+                            date: current.date,
+                            description: bullets.join(' ').substring(0, 500)
+                        });
+                    }
+                }
+            }
+
+            console.log('Parsed items:', items);
+            return items;
+        }
+    </script>
+</body>
+</html>
