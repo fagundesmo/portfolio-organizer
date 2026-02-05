@@ -652,28 +652,7 @@
                 <div class="profile-name" id="profileName">Your Name</div>
             </div>
 
-            <div class="nav-menu">
-                <div class="nav-item active" data-section="summary">
-                    <span class="nav-icon">📝</span>
-                    <span>Summary</span>
-                </div>
-                <div class="nav-item" data-section="experience">
-                    <span class="nav-icon">💼</span>
-                    <span>Experience</span>
-                </div>
-                <div class="nav-item" data-section="education">
-                    <span class="nav-icon">🎓</span>
-                    <span>Education</span>
-                </div>
-                <div class="nav-item" data-section="skills">
-                    <span class="nav-icon">💡</span>
-                    <span>Skills</span>
-                </div>
-                <div class="nav-item" data-section="leadership">
-                    <span class="nav-icon">🏆</span>
-                    <span>Leadership</span>
-                </div>
-            </div>
+            <!-- Simplified sidebar - no navigation menu -->
         </div>
 
         <!-- Main Content -->
@@ -702,12 +681,17 @@
                     <div class="tab" data-tab="courses">Courses</div>
                     <div class="tab" data-tab="skills">Skills</div>
                     <div class="tab" data-tab="leadership">Leadership</div>
+                    <div class="tab" data-tab="ai-reword" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;">🤖 AI Reword</div>
                     <div class="tab" onclick="addNewTab()">+ Add Section</div>
                 </div>
 
                 <div class="cards-grid" id="cardsGrid">
                     <!-- Cards will be inserted here -->
                 </div>
+
+                <button class="add-item-btn" onclick="openAddItemModal()" style="margin-top: 20px; padding: 15px 30px; background: white; color: #667eea; border: 2px dashed #667eea; border-radius: 8px; cursor: pointer; font-size: 1em; font-weight: 600;">
+                    + Add Item
+                </button>
             </div>
 
             <!-- Preview Panel -->
@@ -869,6 +853,42 @@
 
         function renderCards() {
             const grid = document.getElementById('cardsGrid');
+
+            // Special view for AI Reword tab
+            if (currentTab === 'ai-reword') {
+                grid.innerHTML = `
+                    <div style="grid-column: 1/-1; background: white; border-radius: 12px; padding: 30px;">
+                        <h3 style="color: #2d3748; margin-bottom: 20px;">🤖 AI-Powered Experience Rewording</h3>
+                        <p style="color: #718096; margin-bottom: 20px;">Drag any experience here and enter a job description to tailor it perfectly for your application.</p>
+
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 8px; color: #4a5568; font-weight: 500;">Job Description</label>
+                            <textarea id="jobDescription" placeholder="Paste the job description here..." style="width: 100%; min-height: 150px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-family: inherit;"></textarea>
+                        </div>
+
+                        <div id="rewordDropZone"
+                             ondragover="handleDragOver(event)"
+                             ondrop="handleDrop(event)"
+                             style="border: 2px dashed #10b981; border-radius: 12px; padding: 40px; text-align: center; background: #f0fdf4; margin-bottom: 20px; min-height: 200px;">
+                            <p style="color: #059669; font-size: 1.1em; margin-bottom: 10px;">Drag Experience Here</p>
+                            <p style="color: #6b7280; font-size: 0.9em;">Select an experience from the Experience tab and drag it here</p>
+                            <div id="droppedExperience" style="margin-top: 20px;"></div>
+                        </div>
+
+                        <button onclick="rewordWithAI()" style="width: 100%; padding: 15px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; border-radius: 8px; font-size: 1.1em; font-weight: 600; cursor: pointer;">
+                            ✨ Reword with AI
+                        </button>
+
+                        <div id="rewordResult" style="margin-top: 20px; display: none; background: #f0fdf4; padding: 20px; border-radius: 8px; border: 1px solid #10b981;">
+                            <h4 style="color: #059669; margin-bottom: 10px;">Reworded Version:</h4>
+                            <div id="rewordedText" style="color: #2d3748; line-height: 1.6;"></div>
+                            <button onclick="applyRewordedText()" style="margin-top: 15px; padding: 10px 20px; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer;">Apply to Experience</button>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
             const items = resumeData[currentTab] || [];
 
             if (items.length === 0) {
@@ -877,7 +897,7 @@
             }
 
             grid.innerHTML = items.map(item => `
-                <div class="item-card">
+                <div class="item-card" draggable="true" ondragstart="handleDragStart(event, ${item.id}, '${currentTab}')" style="cursor: move;">
                     <div class="card-header">
                         <div>
                             <div class="card-title">${item.company || item.school || item.title}</div>
@@ -1148,6 +1168,10 @@
             }
         }
 
+        function openAddItemModal() {
+            alert('Manual add feature coming soon! For now, use the "Upload Resume" button to add items automatically.');
+        }
+
         async function exportWord() {
             try {
                 // Get selected items
@@ -1256,6 +1280,133 @@
 
         function exportPDF() {
             window.print();
+        }
+
+        // AI Rewording functions
+        let currentExperience = null;
+        let draggedItemId = null;
+        let draggedItemCategory = null;
+
+        function handleDragStart(event, itemId, category) {
+            draggedItemId = itemId;
+            draggedItemCategory = category;
+            event.dataTransfer.effectAllowed = 'copy';
+        }
+
+        function handleDragOver(event) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'copy';
+        }
+
+        function handleDrop(event) {
+            event.preventDefault();
+
+            if (!draggedItemId || !draggedItemCategory) return;
+
+            // Get the dragged item
+            const item = resumeData[draggedItemCategory].find(i => i.id === draggedItemId);
+            if (item) {
+                currentExperience = { ...item };
+
+                // Display the dropped experience
+                document.getElementById('droppedExperience').innerHTML = `
+                    <div style="background: white; padding: 15px; border-radius: 8px; text-align: left; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <h4 style="color: #2d3748; margin-bottom: 8px;">${item.company || item.school || item.title}</h4>
+                        <p style="color: #4a5568; font-size: 0.9em; margin-bottom: 8px;"><strong>${item.title || item.degree || ''}</strong> | ${item.date || ''}</p>
+                        <p style="color: #6b7280; font-size: 0.9em;">${item.description || ''}</p>
+                    </div>
+                `;
+
+                showNotification('Experience loaded! Enter job description and click "Reword with AI"');
+            }
+
+            draggedItemId = null;
+            draggedItemCategory = null;
+        }
+
+        function rewordWithAI() {
+            const jobDesc = document.getElementById('jobDescription').value;
+            const droppedExp = document.getElementById('droppedExperience');
+
+            if (!jobDesc.trim()) {
+                alert('Please enter a job description first');
+                return;
+            }
+
+            if (!currentExperience) {
+                alert('Please drag an experience item here first');
+                return;
+            }
+
+            // Show loading
+            document.getElementById('rewordResult').style.display = 'block';
+            document.getElementById('rewordedText').innerHTML = '<p style="color: #6b7280;">Rewording with AI... This may take a few seconds.</p>';
+
+            // Call OpenAI to reword (you'll need to configure your API key)
+            rewordExperienceWithOpenAI(currentExperience, jobDesc);
+        }
+
+        async function rewordExperienceWithOpenAI(experience, jobDescription) {
+            try {
+                // Get OpenAI API key from localStorage or prompt user
+                let apiKey = localStorage.getItem('openaiApiKey');
+                if (!apiKey) {
+                    apiKey = prompt('Enter your OpenAI API key (it will be saved locally):');
+                    if (apiKey) {
+                        localStorage.setItem('openaiApiKey', apiKey);
+                    } else {
+                        throw new Error('API key required');
+                    }
+                }
+
+                const experienceText = `Company: ${experience.company}\nTitle: ${experience.title}\nDate: ${experience.date}\nDescription: ${experience.description}`;
+
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: 'gpt-4',
+                        messages: [{
+                            role: 'system',
+                            content: 'You are a professional resume writer. Reword the given work experience to better match the job description while keeping all facts accurate. Return only the reworded description as bullet points.'
+                        }, {
+                            role: 'user',
+                            content: `Job Description:\n${jobDescription}\n\nCurrent Experience:\n${experienceText}\n\nPlease reword the experience description to better match this job while keeping it truthful. Return as separate bullet points.`
+                        }],
+                        temperature: 0.7,
+                        max_tokens: 500
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('OpenAI API error: ' + response.statusText);
+                }
+
+                const result = await response.json();
+                const rewordedText = result.choices[0].message.content;
+
+                document.getElementById('rewordedText').innerHTML = rewordedText.replace(/\n/g, '<br>');
+                currentExperience.rewordedDescription = rewordedText;
+
+            } catch (error) {
+                console.error('Reword error:', error);
+                document.getElementById('rewordedText').innerHTML = `<p style="color: #dc2626;">Error: ${error.message}</p><p style="color: #6b7280; font-size: 0.9em;">Make sure your OpenAI API key is valid. <a href="#" onclick="localStorage.removeItem('openaiApiKey'); return false;" style="color: #10b981;">Reset API key</a></p>`;
+            }
+        }
+
+        function applyRewordedText() {
+            if (currentExperience && currentExperience.rewordedDescription) {
+                // Find the experience in resumeData and update it
+                const expItem = resumeData.experience.find(e => e.id === currentExperience.id);
+                if (expItem) {
+                    expItem.description = currentExperience.rewordedDescription;
+                    updatePreview();
+                    showNotification('Experience updated with AI-reworded version!');
+                }
+            }
         }
 
         // Initialize on load

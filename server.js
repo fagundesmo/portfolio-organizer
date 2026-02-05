@@ -5,7 +5,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel, LevelFormat,
-         Table, TableRow, TableCell, WidthType, BorderStyle, VerticalAlign } from 'docx';
+         Table, TableRow, TableCell, WidthType, BorderStyle, VerticalAlign, Header } from 'docx';
 
 dotenv.config();
 
@@ -137,12 +137,12 @@ app.post('/api/generate-docx', async (req, res) => {
             }]
         };
 
-        // Build document sections
-        const docSections = [];
+        // Build document header with name and contact info
+        const headerParagraphs = [];
 
-        // Header with name and contact info
+        // Name
         if (profile.name) {
-            docSections.push(
+            headerParagraphs.push(
                 new Paragraph({
                     alignment: AlignmentType.CENTER,
                     children: [
@@ -153,7 +153,7 @@ app.post('/api/generate-docx', async (req, res) => {
                             size: 22 // 11pt
                         })
                     ],
-                    spacing: { after: 120 }
+                    spacing: { after: 80 }
                 })
             );
         }
@@ -165,7 +165,7 @@ app.post('/api/generate-docx', async (req, res) => {
         if (profile.linkedin) contactParts.push(profile.linkedin);
 
         if (contactParts.length > 0) {
-            docSections.push(
+            headerParagraphs.push(
                 new Paragraph({
                     alignment: AlignmentType.CENTER,
                     children: [
@@ -175,16 +175,16 @@ app.post('/api/generate-docx', async (req, res) => {
                             size: 20 // 10pt
                         })
                     ],
-                    spacing: { after: 120 }
+                    spacing: { after: 80 }
                 })
             );
         }
 
-        // Professional summary
+        // Professional summary in header
         if (profile.summary) {
-            docSections.push(
+            headerParagraphs.push(
                 new Paragraph({
-                    alignment: AlignmentType.LEFT,
+                    alignment: AlignmentType.CENTER,
                     children: [
                         new TextRun({
                             text: profile.summary,
@@ -193,10 +193,13 @@ app.post('/api/generate-docx', async (req, res) => {
                             size: 20 // 10pt
                         })
                     ],
-                    spacing: { after: 200 }
+                    spacing: { after: 120 }
                 })
             );
         }
+
+        // Build document sections (body content only)
+        const docSections = [];
 
         // Add each section
         sections.forEach((section, sectionIndex) => {
@@ -222,6 +225,27 @@ app.post('/api/generate-docx', async (req, res) => {
                     }
                 })
             );
+
+            // Special handling for Skills section - comma-separated list
+            if (section.title.toLowerCase().includes('skill')) {
+                const skillsList = section.items
+                    .map(item => item.title || item.company || item.school || '')
+                    .filter(skill => skill)
+                    .join(', ');
+
+                docSections.push(
+                    new Paragraph({
+                        children: [new TextRun({
+                            text: skillsList,
+                            font: "Times New Roman",
+                            size: 20,
+                            italics: true
+                        })],
+                        spacing: { after: 200 }
+                    })
+                );
+                return; // Skip table generation for skills
+            }
 
             // Section items - using table format like template
             section.items.forEach((item, itemIndex) => {
@@ -354,12 +378,17 @@ app.post('/api/generate-docx', async (req, res) => {
                             height: 15840  // 11 inches
                         },
                         margin: {
-                            top: 1440,    // 1 inch
+                            top: 1800,    // 1.25 inches to account for header
                             right: 1440,
                             bottom: 1440,
                             left: 1440
                         }
                     }
+                },
+                headers: {
+                    default: new Header({
+                        children: headerParagraphs
+                    })
                 },
                 children: docSections
             }]
