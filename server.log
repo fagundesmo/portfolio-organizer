@@ -1,8 +1,8 @@
 
-🚀 Portfolio Organizer Server Running!
+🚀 Resume Organizer Server Running!
 📍 Server: http://localhost:3000
-📄 App: http://localhost:3000/portfolio-organizer.html
+📄 App: http://localhost:3000/resume-organizer-v2.html
 🔑 API Key: Configured ✓
 
-Ready to accept resume uploads!
+Ready to accept resume uploads and generate Word documents!
     

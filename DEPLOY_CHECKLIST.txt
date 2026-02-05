@@ -1,0 +1,17 @@
+Files to upload to GitHub for Railway deployment:
+
+✅ REQUIRED:
+1. resume-organizer-v2.html  (new modern UI)
+2. server.js                  (updated backend with redirect)
+3. package.json              (has docx dependency)
+4. .env.example              (template for API key)
+
+📝 HELPFUL (optional but recommended):
+5. README.md
+6. LICENSE
+7. DEPLOYMENT_V2.md
+
+❌ DO NOT UPLOAD:
+- .env (contains your actual API key!)
+- node_modules/ (will be installed automatically)
+- test.pdf, *.log files
