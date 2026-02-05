@@ -551,6 +551,16 @@
 
         /* PDF Print Styles */
         @media print {
+            @page {
+                size: letter;
+                margin: 0.5in 0.75in;
+            }
+
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
             body {
                 background: white;
                 padding: 0;
@@ -560,25 +570,29 @@
             .container {
                 box-shadow: none;
                 max-width: 100%;
+                background: white;
             }
 
-            .header, .tabs, .export-btn {
+            .header, .tabs, .export-btn, .drop-zone {
                 display: none !important;
             }
 
             .together-view {
-                padding: 0.5in;
+                padding: 0;
                 font-family: 'Times New Roman', Times, serif;
-                color: black !important;
+                color: #000 !important;
+                font-size: 10pt;
+                line-height: 1.15;
             }
 
             .together-view h2 {
                 display: none;
             }
 
+            /* PDF Header */
             .pdf-header {
                 text-align: center;
-                margin-bottom: 15px;
+                margin-bottom: 10pt;
                 page-break-after: avoid;
             }
 
@@ -586,73 +600,94 @@
                 font-family: 'Times New Roman', Times, serif;
                 font-size: 14pt;
                 font-weight: bold;
-                color: black;
+                color: #000;
                 text-transform: uppercase;
-                letter-spacing: 1px;
-                margin-bottom: 3px;
+                letter-spacing: 0.5pt;
+                margin: 0 0 2pt 0;
+                line-height: 1.1;
             }
 
             .pdf-header .contact {
                 font-family: 'Times New Roman', Times, serif;
                 font-size: 10pt;
-                color: black;
-                margin-bottom: 2px;
+                color: #000;
+                margin: 1pt 0;
+                line-height: 1.2;
             }
 
             .pdf-header .summary {
                 font-family: 'Times New Roman', Times, serif;
                 font-size: 10pt;
-                color: black;
+                color: #000;
                 font-style: italic;
-                margin-top: 3px;
+                margin: 3pt 0 0 0;
+                line-height: 1.2;
             }
 
+            /* Section Headers */
             .together-section {
-                margin-top: 15px;
+                margin: 10pt 0 0 0;
                 padding: 0;
                 background: none !important;
                 page-break-inside: avoid;
             }
 
+            .together-section:first-of-type {
+                margin-top: 0;
+            }
+
             .together-section:hover {
                 background: none;
+                cursor: default;
             }
 
             .together-section h3 {
                 font-family: 'Times New Roman', Times, serif;
-                font-size: 10pt;
+                font-size: 11pt;
                 font-weight: bold;
-                color: black !important;
+                color: #000 !important;
                 text-transform: uppercase;
-                margin-bottom: 10px;
-                border-bottom: 1px solid black;
-                padding-bottom: 3px;
+                margin: 0 0 6pt 0;
+                padding: 0 0 2pt 0;
+                border-bottom: 1.5pt solid #000;
+                letter-spacing: 0.3pt;
+                page-break-after: avoid;
+                line-height: 1.1;
             }
 
             .together-section h3::before {
                 display: none;
             }
 
+            /* Individual Items */
             .together-item {
-                margin-bottom: 15px;
-                padding-bottom: 10px;
+                margin: 0 0 10pt 0;
+                padding: 0;
                 border-bottom: none;
                 page-break-inside: avoid;
             }
 
+            .together-item:last-child {
+                margin-bottom: 0;
+            }
+
+            /* Company/Title/Date Header */
             .together-item .item-header {
                 display: flex;
                 justify-content: space-between;
                 align-items: baseline;
                 font-family: 'Times New Roman', Times, serif;
-                margin-bottom: 5px;
+                margin: 0 0 2pt 0;
+                page-break-after: avoid;
             }
 
             .together-item .item-company-title {
                 font-family: 'Times New Roman', Times, serif;
                 font-size: 10pt;
-                color: black !important;
+                color: #000 !important;
                 flex: 1;
+                line-height: 1.15;
+                font-weight: normal;
             }
 
             .together-item .item-company-title strong {
@@ -662,31 +697,53 @@
             .together-item .item-date {
                 font-family: 'Times New Roman', Times, serif;
                 font-size: 10pt;
-                color: black !important;
+                color: #000 !important;
                 white-space: nowrap;
-                margin-left: 10px;
+                margin-left: 12pt;
+                font-weight: normal;
+                line-height: 1.15;
             }
 
+            /* Bullet Points */
             .together-item .item-description {
                 font-family: 'Times New Roman', Times, serif;
                 font-size: 10pt;
-                color: black !important;
-                margin-top: 5px;
-                line-height: 1.4;
-                text-align: justify;
+                color: #000 !important;
+                margin: 2pt 0 0 0;
+                padding: 0;
+                line-height: 1.3;
                 list-style: none;
-                padding-left: 0;
             }
 
             .together-item .item-description li {
-                margin-bottom: 5px;
-                padding-left: 15px;
-                text-indent: -15px;
+                margin: 0 0 3pt 0;
+                padding: 0 0 0 11pt;
+                text-indent: -11pt;
+                text-align: left;
+                orphans: 2;
+                widows: 2;
+                line-height: 1.3;
+            }
+
+            .together-item .item-description li:last-child {
+                margin-bottom: 0;
             }
 
             .together-item .item-description li::before {
                 content: '• ';
-                margin-right: 5px;
+                font-weight: normal;
+                margin-right: 3pt;
+            }
+
+            /* Prevent awkward page breaks */
+            p, li {
+                orphans: 3;
+                widows: 3;
+            }
+
+            h3 {
+                orphans: 4;
+                widows: 4;
             }
         }
     </style>
@@ -1394,6 +1451,7 @@
             });
 
             html += '<button class="export-btn" onclick="exportPDF()">📄 Export as PDF</button>';
+            html += '<button class="export-btn" onclick="exportWord()" style="margin-left: 10px;">📝 Export as Word</button>';
             html += '</div>';
 
             container.innerHTML = html;
@@ -1527,6 +1585,121 @@
         function exportPDF() {
             alert('Export feature: In a full implementation, this would generate a PDF of your portfolio. For now, you can use your browser\'s Print function (Ctrl/Cmd + P) and save as PDF!');
             window.print();
+        }
+
+        // Export to Word function
+        async function exportWord() {
+            try {
+                // Get selected items from all tabs
+                const selectedCourses = data.courses.filter(c => c.selected);
+                const selectedExperience = data.experience.filter(e => e.selected);
+
+                // Get items from custom tabs
+                const customTabItems = {};
+                customTabs.forEach(tabName => {
+                    const tabId = tabName.toLowerCase().replace(/\s+/g, '-');
+                    if (data[tabId]) {
+                        const items = data[tabId].filter(item => item.selected);
+                        if (items.length > 0) {
+                            customTabItems[tabId] = { title: tabName, items };
+                        }
+                    }
+                });
+
+                // Build sections map
+                const sectionsMap = {};
+                if (selectedExperience.length > 0) {
+                    sectionsMap['experience'] = {
+                        title: 'Work Experience',
+                        items: [...selectedExperience].sort((a, b) => parseStartDate(a.date) - parseStartDate(b.date))
+                    };
+                }
+                if (selectedCourses.length > 0) {
+                    sectionsMap['courses'] = {
+                        title: 'Courses & Certifications',
+                        items: [...selectedCourses].sort((a, b) => parseStartDate(a.date) - parseStartDate(b.date))
+                    };
+                }
+                Object.entries(customTabItems).forEach(([tabId, { title, items }]) => {
+                    sectionsMap[tabId] = {
+                        title,
+                        items: [...items].sort((a, b) => parseStartDate(a.date) - parseStartDate(b.date))
+                    };
+                });
+
+                // Check if any items are selected
+                if (Object.keys(sectionsMap).length === 0) {
+                    alert('Please select some items for your portfolio first!');
+                    return;
+                }
+
+                // Build sections array in order
+                const togetherData = sectionOrder
+                    .filter(id => sectionsMap[id])
+                    .map(id => {
+                        const section = sectionsMap[id];
+                        return {
+                            title: section.title,
+                            items: section.items.map(item => {
+                                // Extract location from place
+                                let company = item.place;
+                                let location = '';
+                                const locationMatch = company ? company.match(/[,\-\|]\s*([^,\-\|]+)$/) : null;
+                                if (locationMatch) {
+                                    location = locationMatch[1].trim();
+                                    company = company.substring(0, company.lastIndexOf(locationMatch[0])).trim();
+                                }
+
+                                return {
+                                    company: company,
+                                    school: item.school,
+                                    title: item.title,
+                                    degree: item.degree,
+                                    location: location,
+                                    date: item.date,
+                                    description: item.description
+                                };
+                            })
+                        };
+                    });
+
+                // Prepare the data
+                const exportData = {
+                    profile: userProfile,
+                    sections: togetherData
+                };
+
+                // Call backend API to generate DOCX
+                const serverUrl = window.location.origin;
+                const response = await fetch(`${serverUrl}/api/generate-docx`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(exportData)
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to generate Word document');
+                }
+
+                // Download the file
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${userProfile.name || 'resume'}.docx`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+
+                alert('Word document generated successfully! Check your downloads.');
+            } catch (error) {
+                console.error('Export error:', error);
+                alert('Failed to export: ' + error.message);
+            }
         }
 
         // Close modals when clicking outside

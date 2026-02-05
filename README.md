@@ -7,7 +7,8 @@ AI-powered resume organizer that helps you create professional portfolios by com
 - 🤖 **AI-Powered Resume Parsing** - Upload any resume (PDF/DOCX) and AI extracts everything automatically
 - 📝 **Drag & Drop Interface** - Organize your courses and experience visually
 - 🔄 **Section Reordering** - Drag entire sections to reorder them in your portfolio
-- 📄 **Professional PDF Export** - Export as a clean, formatted resume
+- 📄 **Professional PDF Export** - Export as a clean, formatted PDF resume
+- 📝 **Word Document Export** - Generate properly formatted .docx files with separate bullet points
 - ✏️ **Edit & Delete** - Modify or remove any item
 - 🏷️ **Custom Tabs** - Create tabs for any category (Skills, Projects, etc.)
 - 🔒 **Secure API** - Backend server keeps your Groq API key safe
@@ -68,7 +69,7 @@ See [SETUP_GUIDE.md](SETUP_GUIDE.md) for detailed deployment instructions for:
 3. **Or Add Manually** - Use "+ Add" buttons to create items manually
 4. **Organize** - Click items to select them for your portfolio
 5. **Reorder** - In "Together" tab, drag sections to reorder
-6. **Export** - Click "📄 Export as PDF" and save
+6. **Export** - Click "📄 Export as PDF" or "📝 Export as Word" to download your resume
 
 ## 🛠️ Tech Stack
 

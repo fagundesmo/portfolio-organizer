@@ -4,6 +4,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel, LevelFormat } from 'docx';
 
 dotenv.config();
 
@@ -104,6 +105,277 @@ ${resumeText}`;
         console.error('Server error:', error);
         res.status(500).json({
             error: 'Failed to parse resume: ' + error.message
+        });
+    }
+});
+
+// Generate Word document endpoint
+app.post('/api/generate-docx', async (req, res) => {
+    try {
+        const { profile, sections } = req.body;
+
+        if (!profile || !sections) {
+            return res.status(400).json({ error: 'Profile and sections are required' });
+        }
+
+        // Create numbering config for bullets
+        const numberingConfig = {
+            config: [{
+                reference: "bullets",
+                levels: [{
+                    level: 0,
+                    format: LevelFormat.BULLET,
+                    text: "•",
+                    alignment: AlignmentType.LEFT,
+                    style: {
+                        paragraph: {
+                            indent: { left: 720, hanging: 360 }
+                        }
+                    }
+                }]
+            }]
+        };
+
+        // Build document sections
+        const docSections = [];
+
+        // Header with name and contact info
+        if (profile.name) {
+            docSections.push(
+                new Paragraph({
+                    alignment: AlignmentType.CENTER,
+                    children: [
+                        new TextRun({
+                            text: profile.name.toUpperCase(),
+                            bold: true,
+                            font: "Times New Roman",
+                            size: 22 // 11pt
+                        })
+                    ],
+                    spacing: { after: 120 }
+                })
+            );
+        }
+
+        // Contact line
+        const contactParts = [];
+        if (profile.email) contactParts.push(profile.email);
+        if (profile.phone) contactParts.push(profile.phone);
+        if (profile.linkedin) contactParts.push(profile.linkedin);
+
+        if (contactParts.length > 0) {
+            docSections.push(
+                new Paragraph({
+                    alignment: AlignmentType.CENTER,
+                    children: [
+                        new TextRun({
+                            text: contactParts.join(' | '),
+                            font: "Times New Roman",
+                            size: 20 // 10pt
+                        })
+                    ],
+                    spacing: { after: 120 }
+                })
+            );
+        }
+
+        // Professional summary
+        if (profile.summary) {
+            docSections.push(
+                new Paragraph({
+                    alignment: AlignmentType.LEFT,
+                    children: [
+                        new TextRun({
+                            text: profile.summary,
+                            italics: true,
+                            font: "Times New Roman",
+                            size: 20 // 10pt
+                        })
+                    ],
+                    spacing: { after: 200 }
+                })
+            );
+        }
+
+        // Add each section
+        sections.forEach((section, sectionIndex) => {
+            // Section header
+            docSections.push(
+                new Paragraph({
+                    children: [
+                        new TextRun({
+                            text: section.title.toUpperCase(),
+                            bold: true,
+                            font: "Times New Roman",
+                            size: 22 // 11pt
+                        })
+                    ],
+                    spacing: { before: 200, after: 120 },
+                    border: {
+                        bottom: {
+                            color: "000000",
+                            space: 1,
+                            style: "single",
+                            size: 6
+                        }
+                    }
+                })
+            );
+
+            // Section items
+            section.items.forEach((item, itemIndex) => {
+                // Item header (company/school, title/degree, date)
+                const headerLine1 = [];
+                const headerLine2 = [];
+
+                if (item.company || item.school) {
+                    headerLine1.push(
+                        new TextRun({
+                            text: item.company || item.school,
+                            bold: true,
+                            font: "Times New Roman",
+                            size: 20 // 10pt
+                        })
+                    );
+                }
+
+                if (item.location) {
+                    if (headerLine1.length > 0) {
+                        headerLine1.push(new TextRun({ text: ", ", font: "Times New Roman", size: 20 }));
+                    }
+                    headerLine1.push(
+                        new TextRun({
+                            text: item.location,
+                            font: "Times New Roman",
+                            size: 20
+                        })
+                    );
+                }
+
+                if (item.title || item.degree) {
+                    headerLine2.push(
+                        new TextRun({
+                            text: item.title || item.degree,
+                            italics: true,
+                            font: "Times New Roman",
+                            size: 20
+                        })
+                    );
+                }
+
+                if (item.date) {
+                    if (headerLine2.length > 0) {
+                        // Add tab or spaces for right alignment effect
+                        headerLine2.push(new TextRun({ text: " ", font: "Times New Roman", size: 20 }));
+                    }
+                    headerLine2.push(
+                        new TextRun({
+                            text: item.date,
+                            font: "Times New Roman",
+                            size: 20
+                        })
+                    );
+                }
+
+                // Add header lines
+                if (headerLine1.length > 0) {
+                    docSections.push(
+                        new Paragraph({
+                            children: headerLine1,
+                            spacing: { after: 40 }
+                        })
+                    );
+                }
+
+                if (headerLine2.length > 0) {
+                    docSections.push(
+                        new Paragraph({
+                            children: headerLine2,
+                            spacing: { after: 80 }
+                        })
+                    );
+                }
+
+                // Description bullets
+                if (item.description) {
+                    // Split by period + space to separate bullets
+                    const bullets = item.description
+                        .split(/\.\s+/)
+                        .map(b => b.trim())
+                        .filter(b => b && b.length > 10);
+
+                    bullets.forEach((bullet, bulletIndex) => {
+                        // Add period back if not present
+                        let bulletText = bullet;
+                        if (!bulletText.endsWith('.')) {
+                            bulletText += '.';
+                        }
+
+                        docSections.push(
+                            new Paragraph({
+                                numbering: {
+                                    reference: "bullets",
+                                    level: 0
+                                },
+                                children: [
+                                    new TextRun({
+                                        text: bulletText,
+                                        font: "Times New Roman",
+                                        size: 20
+                                    })
+                                ],
+                                spacing: { after: 60 }
+                            })
+                        );
+                    });
+                }
+
+                // Add spacing between items
+                if (itemIndex < section.items.length - 1) {
+                    docSections.push(
+                        new Paragraph({
+                            children: [new TextRun({ text: "", size: 20 })],
+                            spacing: { after: 120 }
+                        })
+                    );
+                }
+            });
+        });
+
+        // Create document
+        const doc = new Document({
+            numbering: numberingConfig,
+            sections: [{
+                properties: {
+                    page: {
+                        size: {
+                            width: 12240,  // 8.5 inches (US Letter)
+                            height: 15840  // 11 inches
+                        },
+                        margin: {
+                            top: 1440,    // 1 inch
+                            right: 1440,
+                            bottom: 1440,
+                            left: 1440
+                        }
+                    }
+                },
+                children: docSections
+            }]
+        });
+
+        // Generate buffer
+        const buffer = await Packer.toBuffer(doc);
+
+        // Send as downloadable file
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        res.setHeader('Content-Disposition', 'attachment; filename="resume.docx"');
+        res.send(buffer);
+
+    } catch (error) {
+        console.error('DOCX generation error:', error);
+        res.status(500).json({
+            error: 'Failed to generate Word document: ' + error.message
         });
     }
 });
