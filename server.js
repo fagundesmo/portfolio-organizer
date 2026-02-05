@@ -110,6 +110,84 @@ ${resumeText}`;
     }
 });
 
+// Reword experience endpoint
+app.post('/api/reword-experience', async (req, res) => {
+    try {
+        const { experience, jobDescription } = req.body;
+
+        if (!experience || !jobDescription) {
+            return res.status(400).json({ error: 'Experience and job description are required' });
+        }
+
+        // Your Groq API key from environment variable
+        const apiKey = process.env.GROQ_API_KEY;
+
+        if (!apiKey) {
+            return res.status(500).json({ error: 'Server not configured with API key' });
+        }
+
+        const experienceText = `Company: ${experience.company || experience.school || ''}
+Title: ${experience.title || experience.degree || ''}
+Date: ${experience.date || ''}
+Description: ${experience.description || ''}`;
+
+        const prompt = `You are a professional resume writer. Your task is to reword the given work experience to better match the job description while keeping all facts accurate and truthful.
+
+Job Description:
+${jobDescription}
+
+Current Experience:
+${experienceText}
+
+Instructions:
+1. Analyze the job description to identify key skills, technologies, and requirements
+2. Reword the experience description to emphasize relevant skills and achievements that match the job
+3. Keep all facts accurate - do not make up accomplishments or skills
+4. Use action verbs and quantify achievements where possible
+5. Return 3-5 bullet points that are tailored to this specific job
+6. Each bullet point should be clear, concise, and highlight relevant value
+
+Return ONLY the reworded bullet points, one per line, starting with a bullet point (•). No introduction, no explanations, just the bullets.`;
+
+        // Call Groq API
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+                model: 'llama-3.3-70b-versatile',
+                messages: [{
+                    role: 'user',
+                    content: prompt
+                }],
+                temperature: 0.7,
+                max_tokens: 800
+            })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Groq API error:', errorText);
+            return res.status(response.status).json({
+                error: `AI service error: ${response.statusText}`
+            });
+        }
+
+        const result = await response.json();
+        const rewordedText = result.choices[0].message.content;
+
+        res.json({ success: true, rewordedText });
+
+    } catch (error) {
+        console.error('Server error:', error);
+        res.status(500).json({
+            error: 'Failed to reword experience: ' + error.message
+        });
+    }
+});
+
 // Generate Word document endpoint
 app.post('/api/generate-docx', async (req, res) => {
     try {
